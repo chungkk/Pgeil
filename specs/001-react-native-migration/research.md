@@ -1,564 +1,578 @@
-# Phase 0: Technical Research
+# Research & Technology Decisions: React Native Migration
 
-**Feature**: Native Mobile App for German Language Learning  
-**Date**: 2024-12-16  
+**Feature**: Native iOS German Learning App  
+**Date**: 2024-12-17  
 **Status**: Phase 0 Complete
 
-## Research Questions
+## Overview
 
-This document resolves all NEEDS CLARIFICATION items from the Technical Context section of [plan.md](./plan.md).
+This document resolves all "NEEDS CLARIFICATION" items from the Technical Context and documents technology choices for the React Native migration.
 
 ---
 
-## 1. Language/Framework Choice
+## 1. Audio/Video Playback Library
 
-### Question
-Should we use JavaScript/TypeScript with React Native or native Swift for iOS?
-
-### Research Findings
-
-#### Option A: React Native (Cross-platform)
-**Pros**:
-- ✅ Code reusability with existing React/Next.js patterns
-- ✅ Faster development (single codebase for iOS + future Android)
-- ✅ Large ecosystem (npm packages, community)
-- ✅ Hot reload for faster iteration
-- ✅ Team already knows JavaScript/TypeScript
-- ✅ Can share types/utilities with web codebase
-
-**Cons**:
-- ❌ Slightly larger app size (~40-50MB base)
-- ❌ Performance overhead for complex animations
-- ❌ Requires bridge for native modules
-- ❌ Debugging can be complex
-
-#### Option B: Native Swift (iOS-only)
-**Pros**:
-- ✅ Best performance (native compilation)
-- ✅ Smaller app size (~20-30MB)
-- ✅ Full access to iOS APIs
-- ✅ Better SwiftUI/UIKit integration
-- ✅ Excellent Xcode tooling
-
-**Cons**:
-- ❌ Steep learning curve (new language/framework)
-- ❌ Separate codebase from web
-- ❌ No code sharing with existing project
-- ❌ Future Android app requires complete rewrite
-- ❌ Longer development time
-
-### Decision
-
-**✅ React Native with TypeScript**
+### Decision: **react-native-track-player** (Primary) + **react-native-video** (Fallback for YouTube)
 
 ### Rationale
 
-1. **Existing codebase**: Project already uses React, Next.js, and TypeScript. Team familiarity reduces risk and training time.
-2. **Cross-platform potential**: User said "iOS" initially, but future Android support is likely valuable. React Native enables this with 80%+ code reuse.
-3. **Development speed**: Given the 16 screens and 60+ components needed, React Native's hot reload and component reusability will significantly accelerate development.
-4. **Performance acceptable**: For this app's use case (audio playback, text display, forms), React Native performance is more than sufficient. Critical path (audio playback) can use native modules if needed.
-5. **Team efficiency**: No need to hire Swift developers or split team across two codebases.
+**react-native-track-player** is selected for audio playback and background audio because:
+- ✅ Robust background audio support (critical for shadowing exercises)
+- ✅ Built-in support for remote control (lock screen, control center)
+- ✅ Playback speed control (0.5x-1.5x as per spec)
+- ✅ Progress tracking and seek functionality
+- ✅ Excellent iOS support with native Media Player integration
+- ✅ Active maintenance and large community
+
+**react-native-video** is used for YouTube video playback because:
+- ✅ Direct video URL support (extracted via backend)
+- ✅ Synchronized subtitle/transcript display
+- ✅ Lightweight for video-only scenarios
+- ✅ Better control over playback compared to WebView
 
 ### Alternatives Considered
 
-- **Flutter**: Rejected because team has no Dart experience and React Native has better integration with existing Node.js backend
-- **Ionic/Cordova**: Rejected because pure WebView approach has worse performance than React Native
-- **Native Swift + React Native views**: Overly complex for this project's scope
+| Option | Pros | Cons | Rejected Because |
+|--------|------|------|------------------|
+| **expo-av** | All-in-one solution, simpler setup, Expo SDK integration | Requires Expo, heavier bundle, less control over background audio | We're using bare React Native for better native control; expo-av background audio limitations |
+| **react-native-sound** | Lightweight, simple API | No background support, no video, minimal features | Insufficient for our complex audio requirements (background, speed control, seek) |
+| **Native iOS AVPlayer** | Maximum control, best performance | Requires native bridge code, maintenance burden | react-native-track-player already provides excellent native integration |
+
+### Implementation Notes
+
+- Use `react-native-track-player` for:
+  - Shadowing audio playback (background-enabled)
+  - Dictation audio prompts
+  - Pronunciation comparison audio
+- Use `react-native-video` for:
+  - YouTube video display in lesson detail
+  - Synchronized transcript highlighting
+- Download manager will cache both audio (m4a) and video (mp4) streams
 
 ---
 
-## 2. React Native Framework Choice
+## 2. YouTube Integration Strategy
 
-### Question
-Should we use Expo (managed workflow) or Bare React Native?
-
-### Research Findings
-
-#### Option A: Expo (Managed Workflow)
-**Pros**:
-- ✅ Zero native code configuration needed
-- ✅ Built-in OTA (over-the-air) updates
-- ✅ EAS Build (cloud build service)
-- ✅ Extensive SDK (camera, audio, notifications, etc.)
-- ✅ Faster initial setup (5 minutes vs 2 hours)
-- ✅ Easy testing with Expo Go app
-- ✅ Can eject to bare workflow if needed
-
-**Cons**:
-- ❌ Larger initial app size (~50-60MB)
-- ❌ Limited to Expo-supported native modules
-- ❌ Requires Expo account for builds
-- ❌ Less control over native build process
-
-#### Option B: Bare React Native
-**Pros**:
-- ✅ Full control over native code
-- ✅ Smaller app size (~35-45MB)
-- ✅ Can use any native module
-- ✅ Direct Xcode/Android Studio access
-
-**Cons**:
-- ❌ Complex initial setup
-- ❌ Manual native dependency management
-- ❌ No built-in OTA updates
-- ❌ More maintenance overhead
-- ❌ Requires macOS for iOS builds
-
-### Decision
-
-**✅ Expo (Managed Workflow)**
+### Decision: **Backend Streaming + react-native-video** (Hybrid Approach)
 
 ### Rationale
 
-1. **Rapid prototyping**: Expo allows us to get a working app in hours, not days. Critical for validating the migration approach early.
-2. **Built-in features**: Expo SDK includes everything needed for this app:
-   - `expo-av`: Audio/video playback ✅
-   - `expo-file-system`: Offline downloads ✅
-   - `expo-secure-store`: Token storage ✅
-   - `expo-font`: Custom fonts ✅
-   - `expo-notifications`: Push notifications ✅
-3. **OTA updates**: Can fix bugs and deploy updates without App Store review (for JS changes).
-4. **EAS Build**: Cloud build service means no need for macOS for every developer (can build from CI/CD).
-5. **Future-proof**: If we need custom native modules later, we can run `expo eject` to migrate to bare workflow without rewriting code.
-6. **Team experience**: Lower barrier to entry for team members unfamiliar with Xcode/native development.
+Given the clarification that **YouTube is the video source**, we'll use a hybrid approach:
+
+1. **Online Mode**: Backend extracts YouTube stream URLs using existing `@distube/ytdl-core` and `youtubei.js`, returns signed temporary URLs to mobile app
+2. **Offline Mode**: Backend pre-processes and caches audio/video files, mobile app downloads these cached files
+3. **Mobile Player**: `react-native-video` plays the stream URLs (online) or local files (offline)
+
+**Why this approach**:
+- ✅ Complies with YouTube ToS (server-side processing only)
+- ✅ Reuses existing backend YouTube extraction logic
+- ✅ Avoids rate limits (backend manages this)
+- ✅ Enables offline support (spec requirement FR-013)
+- ✅ No WebView needed (better performance, native UX)
+- ✅ Mobile app doesn't need YouTube API keys
 
 ### Alternatives Considered
 
-- **Expo bare workflow**: Middle ground but adds complexity without significant benefits for this project
-- **React Native CLI**: More control but unnecessary complexity for app requirements
+| Option | Pros | Cons | Rejected Because |
+|--------|------|------|------------------|
+| **react-native-youtube-iframe** | Official YouTube support, WebView-based | Requires internet, no offline, poor performance, limited playback control | Cannot support offline (10-lesson download requirement), WebView performance issues |
+| **Custom WebView** | Simple implementation | Poor UX, limited control, no offline, slow | Same issues as iframe approach, violates native UX goal |
+| **Direct YouTube API** | Direct access | Rate limits, no offline, complex mobile auth, ToS complications | Offline support impossible, rate limit risks |
+| **Fully cached on backend** | Simple mobile app | Massive storage costs, copyright concerns | Storage costs prohibitive for hundreds of lessons |
+
+### Implementation Notes
+
+**Backend API** (`/api/lessons/[id]/stream`):
+```typescript
+// Returns temporary stream URLs for online playback
+GET /api/lessons/[lessonId]/stream
+Response: {
+  video: "https://backend.com/stream/video/[signed-url]",
+  audio: "https://backend.com/stream/audio/[signed-url]",
+  expiresAt: "2024-12-17T12:00:00Z"
+}
+```
+
+**Backend API** (`/api/lessons/[id]/download`):
+```typescript
+// Pre-processes and returns downloadable files
+GET /api/lessons/[lessonId]/download
+Response: {
+  video: "https://backend.com/downloads/[lesson-id]-video.mp4",
+  audio: "https://backend.com/downloads/[lesson-id]-audio.m4a",
+  transcript: { ... },
+  size: 45678910  // bytes
+}
+```
+
+**Mobile Implementation**:
+- Online: Fetch stream URLs from `/stream` endpoint, play via `react-native-video`
+- Download: Fetch from `/download` endpoint, save to `FileSystem.documentDirectory`
+- Offline: Load local files, play via `react-native-video`
 
 ---
 
-## 3. Testing Strategy
+## 3. E2E Testing Framework
 
-### Question
-What testing framework and approach should we use?
-
-### Research Findings
-
-#### Testing Layers
-
-**Unit Tests** (70% of tests)
-- **Framework**: Jest (built-in with React Native/Expo)
-- **Target**: Utils, hooks, services, business logic
-- **Coverage goal**: >80% for critical paths
-
-**Component Tests** (20% of tests)
-- **Framework**: React Native Testing Library
-- **Target**: Individual UI components (atoms, molecules)
-- **Focus**: Accessibility, interactions, state changes
-
-**Integration Tests** (8% of tests)
-- **Framework**: React Native Testing Library
-- **Target**: Screen flows (navigation, API integration)
-- **Focus**: User journeys from spec
-
-**E2E Tests** (2% of tests)
-- **Framework**: Detox
-- **Target**: Critical user paths (P1 user stories)
-- **Focus**: Login → Browse → Play lesson → Complete
-
-#### Best Practices from Research
-
-1. **Test-driven for critical flows**: Write tests for P1 user stories before implementation
-2. **Mock API calls**: Use MSW (Mock Service Worker) or similar for consistent test data
-3. **Accessibility testing**: Use `@testing-library/react-native` accessibility queries
-4. **Snapshot tests**: Minimal use (only for stable, complex UI)
-5. **Performance tests**: Use React Native Performance monitoring for key metrics
-
-### Decision
-
-**✅ Jest + React Native Testing Library + Detox (selective)**
+### Decision: **Detox**
 
 ### Rationale
 
-1. **Standard stack**: Jest and RTL are industry standard for React Native
-2. **Fast feedback**: Unit tests run in <1s, giving quick feedback during development
-3. **Accessibility-first**: RTL encourages testing from user perspective
-4. **Selective E2E**: Only test critical P1 paths with Detox (expensive to maintain)
-5. **CI-friendly**: All tools integrate well with GitHub Actions or similar
+**Detox** is selected for end-to-end testing because:
+- ✅ React Native-native (built by Wix for React Native)
+- ✅ Gray-box testing (synchronization with React Native internals)
+- ✅ Excellent iOS simulator support
+- ✅ Fast execution (waits intelligently for animations/async ops)
+- ✅ Jest integration (consistent with unit tests)
+- ✅ Better developer experience for React Native projects
 
-### Test Priorities (from Spec)
+### Alternatives Considered
 
-**Must test** (P1):
-- [ ] User can browse lessons (User Story 1)
-- [ ] User can play audio with synchronized transcript (User Story 2)
-- [ ] User can complete a lesson and earn points (User Story 2)
+| Option | Pros | Cons | Rejected Because |
+|--------|------|------|------------------|
+| **Appium** | Cross-platform, mature, black-box testing | Slower, setup complexity, flaky, less React Native integration | Overkill for iOS-only app, slower execution, more brittle tests |
+| **Manual Testing** | No setup, flexible | Not scalable, regression prone, time-consuming | Violates testing best practices, not sustainable for CI/CD |
+| **Maestro** | Simple YAML config, fast | Newer (less mature), smaller community | Detox more established, better docs for React Native |
 
-**Should test** (P2):
-- [ ] Dictation mode validates input correctly (User Story 3)
-- [ ] Dictionary lookup returns results (User Story 4)
+### Implementation Notes
 
-**Nice to test** (P3):
-- [ ] Leaderboard displays rankings (User Story 5)
-- [ ] Offline lessons work without network (User Story 6)
-
----
-
-## 4. Technology Stack Best Practices
-
-### Navigation
-**Decision**: React Navigation 6.x (latest)
-
-**Rationale**:
-- De facto standard for React Native navigation
-- Supports stack, tabs, drawers, modals
-- Excellent TypeScript support
-- Active maintenance and large community
-
-**Structure**:
-```typescript
-AppNavigator (Root)
-├── AuthStack (if not logged in)
-│   ├── Login
-│   └── Register
-└── MainTabs (if logged in)
-    ├── HomeStack
-    │   ├── Home (lesson list)
-    │   └── LessonDetail
-    ├── DictationStack
-    └── ProfileStack
+**Test Structure**:
+```text
+__tests__/
+├── unit/                      # Jest
+│   ├── components/
+│   ├── services/
+│   └── utils/
+├── integration/               # Jest + React Native Testing Library
+│   ├── auth-flow.test.ts
+│   ├── lesson-playback.test.ts
+│   └── offline-sync.test.ts
+└── e2e/                       # Detox
+    ├── login.e2e.ts
+    ├── lesson-shadowing.e2e.ts
+    ├── dictation.e2e.ts
+    └── offline-download.e2e.ts
 ```
 
-### Audio Playback
-**Decision**: `expo-av` for audio, `react-native-video` for video (if needed)
-
-**Rationale**:
-- `expo-av` handles background audio, playback speed, seek
-- Well-documented and maintained
-- Works with Expo managed workflow
-- Supports required features:
-  - Playback speed control ✅
-  - Seek to position ✅
-  - Background playback ✅
-  - Audio focus handling ✅
-
-**Alternative considered**: `react-native-track-player` (rejected because requires bare workflow)
-
-### State Management
-**Decision**: React Context + SWR for data fetching
-
-**Rationale**:
-- Context is built-in, no extra dependencies
-- SWR provides caching, revalidation, optimistic updates
-- Lightweight compared to Redux/MobX
-- Sufficient for app's state complexity
-- Team already uses SWR in Next.js web app
-
-**Contexts needed**:
-- `AuthContext`: User session, login/logout
-- `ThemeContext`: Dark/light mode
-- `LanguageContext`: i18n (de/vi/en)
-- `AudioContext`: Playback state (optional, may use local state)
-
-### Storage
-**Decision**:
-- `@react-native-async-storage/async-storage`: Preferences, settings
-- `expo-secure-store`: Auth tokens, sensitive data
-- `expo-file-system`: Downloaded lesson files (audio, transcripts)
-- Consider `WatermelonDB` if offline data gets complex (unlikely for MVP)
-
-### UI Components
-**Decision**: Custom components using React Native primitives + `react-native-reanimated` for animations
-
-**Rationale**:
-- Full control over design
-- Smaller bundle size than UI libraries (React Native Paper, NativeBase)
-- Better performance with custom components
-- Design system approach (atoms/molecules/organisms)
-
-**Key libraries**:
-- `react-native-reanimated`: Smooth animations (60 FPS)
-- `react-native-gesture-handler`: Touch gestures
-- `react-native-vector-icons`: Icons (Material Icons)
-
-### Internationalization
-**Decision**: `i18next` + `react-i18next` (already used in web app)
-
-**Rationale**:
-- Consistency with existing web app
-- Can potentially share translation files
-- Robust and well-maintained
-- Supports language detection, lazy loading
-
----
-
-## 5. Development Workflow
-
-### Local Development
-```bash
-# Install Expo CLI
-npm install -g expo-cli
-
-# Create project
-npx create-expo-app german-shadowing-app --template expo-template-blank-typescript
-
-# Start development server
-npm start
-
-# Run on iOS simulator
-npm run ios
-
-# Run on Android emulator
-npm run android
-
-# Run on physical device via Expo Go app
-# (Scan QR code from terminal)
-```
-
-### Testing Workflow
-```bash
-# Run unit tests
-npm test
-
-# Run with coverage
-npm test -- --coverage
-
-# Run E2E tests (requires simulator/device)
-npm run test:e2e
-
-# Run specific test file
-npm test -- LoginScreen.test.tsx
-```
-
-### Build & Deploy
-```bash
-# Install EAS CLI
-npm install -g eas-cli
-
-# Login to Expo
-eas login
-
-# Configure EAS build
-eas build:configure
-
-# Build for iOS (development)
-eas build --platform ios --profile development
-
-# Build for iOS (production)
-eas build --platform ios --profile production
-
-# Submit to App Store
-eas submit --platform ios
-```
-
-### CI/CD Integration
-```yaml
-# .github/workflows/mobile-ci.yml
-name: Mobile CI
-on: [push, pull_request]
-
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: 18
-      - run: npm ci
-      - run: npm test -- --coverage
-      - run: npm run lint
-
-  build:
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-      - run: npm ci
-      - run: npx expo-cli export
-      - run: eas build --platform ios --profile production --non-interactive
-```
-
----
-
-## 6. API Integration Strategy
-
-### API Client Setup
-
-**Decision**: `axios` with interceptors for auth and error handling
-
-```typescript
-// src/services/api.ts
-import axios from 'axios';
-import { getSecureItem } from './storage';
-
-const api = axios.create({
-  baseURL: process.env.EXPO_PUBLIC_API_URL || 'https://papageil.net/api',
-  timeout: 10000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// Request interceptor: Add auth token
-api.interceptors.request.use(async (config) => {
-  const token = await getSecureItem('auth_token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-
-// Response interceptor: Handle errors
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      // Handle unauthorized (redirect to login)
+**Detox Config** (`.detoxrc.js`):
+```javascript
+module.exports = {
+  testRunner: 'jest',
+  runnerConfig: 'e2e/config.json',
+  apps: {
+    'ios.debug': {
+      type: 'ios.app',
+      binaryPath: 'ios/build/Build/Products/Debug-iphonesimulator/PapaGeil.app',
+      build: 'xcodebuild -workspace ios/PapaGeil.xcworkspace -scheme PapaGeil -configuration Debug -sdk iphonesimulator -derivedDataPath ios/build'
     }
-    return Promise.reject(error);
+  },
+  devices: {
+    simulator: {
+      type: 'ios.simulator',
+      device: { type: 'iPhone 14' }
+    }
   }
-);
-
-export default api;
+};
 ```
 
-### Existing API Endpoints to Consume
+---
 
-From existing Next.js backend (`pages/api/`):
+## 4. Backend Testing Strategy
 
-**Authentication** (7 endpoints):
-- `POST /api/auth/register` - Create account
-- `POST /api/auth/login` - Login
-- `POST /api/auth/logout` - Logout
-- `GET /api/auth/me` - Get current user
-- `POST /api/auth/refresh` - Refresh token
-- `POST /api/auth/change-password` - Update password
-- `POST /api/auth/[...nextauth]` - OAuth (Google)
+### Decision: **Jest + Supertest** (API Testing) + Existing Setup
 
-**Lessons** (8 endpoints):
-- `GET /api/lessons` - List lessons (with filters)
-- `GET /api/lessons/[id]` - Get lesson detail
-- `POST /api/lessons/[id]/view` - Increment view count
-- `GET /api/article-categories` - List categories
-- (4 more lesson management endpoints)
+### Rationale
 
-**User Progress** (5 endpoints):
-- `GET /api/user/points` - Get user points
-- `POST /api/user/points` - Update points
-- `GET /api/user/study-stats` - Get study statistics
-- `GET /api/user/srs-progress` - Spaced repetition progress
-- `POST /api/progress` - Save lesson progress
+For the existing Next.js backend:
+- ✅ **Jest**: Already in devDependencies, industry standard for Node.js
+- ✅ **Supertest**: HTTP assertion library, perfect for API endpoint testing
+- ✅ **MongoDB Memory Server**: In-memory MongoDB for test isolation
+- ✅ **Minimal disruption**: Works with existing Next.js API routes
 
-**Leaderboard** (7 endpoints):
-- `GET /api/leaderboard` - Get rankings
-- `GET /api/leaderboard/weekly` - Weekly rankings
-- `GET /api/leaderboard/monthly` - Monthly rankings
-- `GET /api/leaderboard/alltime` - All-time rankings
-- `GET /api/leaderboard/user-rank` - User's rank
-- `GET /api/leaderboard/badges` - User achievements
-- `GET /api/leaderboard/leagues` - League standings
+**Why not change backend testing**:
+- Backend is stable (72 existing routes)
+- Migration focus is mobile app
+- Only minor backend changes needed (mobile auth endpoints)
+- Existing patterns should be preserved
 
-**Dictionary** (1 endpoint):
-- `POST /api/dictionary` - Look up word definition
+### Implementation Notes
 
-**Additional** (44 endpoints):
-- Notifications, transcription, YouTube integration, etc.
+**Add to backend** (`ppgeil/package.json`):
+```json
+{
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "@types/jest": "^29.5.0",
+    "supertest": "^6.3.3",
+    "@types/supertest": "^2.0.12",
+    "mongodb-memory-server": "^9.1.0"
+  },
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
+  }
+}
+```
 
-### Data Fetching Pattern
+**Test Structure** (`ppgeil/__tests__/`):
+```text
+__tests__/
+├── api/
+│   ├── auth.test.ts
+│   ├── lessons.test.ts
+│   ├── progress.test.ts
+│   └── pronunciation.test.ts
+├── lib/
+│   ├── mongodb.test.ts
+│   └── auth.test.ts
+└── models/
+    ├── User.test.ts
+    └── Lesson.test.ts
+```
 
-**Decision**: Use SWR for GET requests, axios directly for mutations
-
+**Example Test**:
 ```typescript
-// Example: Fetch lessons
-import useSWR from 'swr';
-import api from '@/services/api';
+import request from 'supertest';
+import { createMocks } from 'node-mocks-http';
+import handler from '@/pages/api/lessons/[id]';
 
-export function useLessons(categorySlug?: string, difficulty?: string) {
-  const params = new URLSearchParams();
-  if (categorySlug) params.append('category', categorySlug);
-  if (difficulty) params.append('difficulty', difficulty);
+describe('/api/lessons/[id]', () => {
+  it('returns lesson with valid ID', async () => {
+    const { req, res } = createMocks({
+      method: 'GET',
+      query: { id: 'test-lesson-id' }
+    });
+    await handler(req, res);
+    expect(res._getStatusCode()).toBe(200);
+    expect(res._getJSONData()).toHaveProperty('title');
+  });
+});
+```
 
-  const { data, error, mutate } = useSWR(
-    `/lessons?${params.toString()}`,
-    (url) => api.get(url).then((res) => res.data)
-  );
+---
 
-  return {
-    lessons: data?.lessons || [],
-    total: data?.total || 0,
-    isLoading: !error && !data,
-    isError: error,
-    refresh: mutate,
-  };
+## 5. React Native Project Setup Approach
+
+### Decision: **Bare React Native** (not Expo)
+
+### Rationale
+
+Based on the REACT_NATIVE_MIGRATION_PLAN.md analysis, **Bare React Native** is recommended because:
+- ✅ Full control over native modules (audio, video, file system)
+- ✅ Smaller bundle size (critical for 100MB target)
+- ✅ No Expo limitations on native features
+- ✅ Better suited for complex media handling
+- ✅ Direct access to native iOS APIs when needed
+- ✅ CocoaPods full control for iOS dependencies
+
+**Why not Expo**:
+- ❌ Larger bundle size (>150MB typical)
+- ❌ Potential limitations with YouTube stream handling
+- ❌ Extra layer of abstraction not needed
+- ❌ Migration from existing Capacitor setup suggests bare RN closer to current architecture
+
+### Implementation Notes
+
+**Initialize Project**:
+```bash
+npx react-native@latest init PapaGeil --template react-native-template-typescript
+```
+
+**Key Dependencies** (`package.json`):
+```json
+{
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-native": "^0.73.0",
+    "@react-navigation/native": "^6.1.9",
+    "@react-navigation/stack": "^6.3.20",
+    "@react-navigation/bottom-tabs": "^6.5.11",
+    "react-native-track-player": "^4.0.1",
+    "react-native-video": "^6.0.0",
+    "@react-native-voice/voice": "^3.2.4",
+    "@react-native-async-storage/async-storage": "^1.21.0",
+    "react-native-secure-storage": "^1.0.3",
+    "@react-native-community/netinfo": "^11.1.0",
+    "react-native-vector-icons": "^10.0.3",
+    "react-native-gesture-handler": "^2.14.0",
+    "react-native-reanimated": "^3.6.1",
+    "react-i18next": "^13.5.0",
+    "i18next": "^23.7.11",
+    "axios": "^1.6.2",
+    "date-fns": "^3.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.45",
+    "@types/react-native": "^0.73.0",
+    "typescript": "^5.3.3",
+    "jest": "^29.7.0",
+    "@testing-library/react-native": "^12.4.2",
+    "detox": "^20.14.8"
+  }
 }
 ```
 
 ---
 
-## 7. Performance Optimization Strategies
+## 6. Dictionary API Selection
 
-### Success Criteria from Spec
-- App launch < 3s ✅
-- Lesson load < 2s ✅
-- Audio latency < 100ms ✅
-- 60 FPS scrolling ✅
-- Dictionary lookup < 2s ✅
+### Decision: **Free Dictionary API** + Local Cache (MongoDB + AsyncStorage)
 
-### Optimization Techniques
+### Rationale
 
-**App Launch Time**:
-- Use code splitting with `React.lazy()` for non-critical screens
-- Defer initialization of heavy libraries (audio, analytics)
-- Cache frequently accessed data in AsyncStorage
-- Use Hermes JavaScript engine (enabled by default in Expo)
+Based on the clarification of "Hybrid (API online + database offline cache)", we'll use:
 
-**Lesson Loading**:
-- Prefetch lesson data when user taps (optimistic loading)
-- Cache lesson transcripts locally
-- Progressive loading: Show UI → Load audio in background
-- Use `react-native-fast-image` for image caching
+**Primary**: **Free Dictionary API** (https://dictionaryapi.dev/)
+- ✅ Free, no authentication required
+- ✅ German language support
+- ✅ Provides definitions, phonetics, examples
+- ✅ No rate limits for reasonable usage
+- ✅ RESTful, simple integration
 
-**Audio Playback**:
-- Use native audio module (`expo-av`)
-- Preload next sentence audio while current plays
-- Buffer management for offline playback
+**Fallback**: **Wiktionary API** (if Free Dictionary lacks German-Vietnamese)
+- ✅ Comprehensive multilingual support
+- ✅ Community-maintained
+- ✅ Free
 
-**Scrolling Performance**:
-- Use `FlatList` with `getItemLayout` for fixed-height items
-- Implement `windowSize` and `maxToRenderPerBatch` optimizations
-- Avoid expensive operations in render (memoization)
-- Use `react-native-reanimated` for 60 FPS animations
+**Cache Strategy**:
+- Backend caches lookups in MongoDB (`DictionaryCache` collection)
+- Mobile app caches in AsyncStorage for offline use
+- TTL: 90 days for cached entries
+- Backend translates to Vietnamese using Google Translate API (paid, low volume)
 
-**Bundle Size**:
-- Use Expo's built-in tree shaking
-- Avoid importing entire libraries (e.g., `import { Button } from 'lib'` not `import lib from 'lib'`)
-- Use vector icons instead of image assets
-- Compress images with `expo-optimize`
+### Alternatives Considered
+
+| Option | Pros | Cons | Rejected Because |
+|--------|------|------|------------------|
+| **Linguee API** | High quality, German-English | No free tier, expensive for scale | Cost prohibitive ($100+/month) |
+| **Collins Dictionary** | Professional | Paid only | Cost prohibitive |
+| **Dict.cc API** | German-focused, free | Rate limits, inconsistent availability | Less reliable than Free Dictionary API |
+| **Self-hosted Dictionary** | Full control, offline | Massive data import, maintenance | Complexity not justified when hybrid cache works |
+
+### Implementation Notes
+
+**Backend Service** (`ppgeil/lib/dictionary.js`):
+```javascript
+async function lookupWord(word, targetLang = 'vi') {
+  // 1. Check cache
+  const cached = await DictionaryCache.findOne({ word, targetLang });
+  if (cached && cached.cachedAt > Date.now() - 90 * 24 * 60 * 60 * 1000) {
+    return cached.data;
+  }
+  
+  // 2. Fetch from Free Dictionary API
+  const definition = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/de/${word}`);
+  
+  // 3. Translate to Vietnamese using Google Translate
+  const translation = await googleTranslate(definition, 'vi');
+  
+  // 4. Cache result
+  await DictionaryCache.updateOne(
+    { word, targetLang },
+    { word, targetLang, data: { definition, translation }, cachedAt: new Date() },
+    { upsert: true }
+  );
+  
+  return { definition, translation };
+}
+```
+
+**Mobile Implementation** (`src/services/api/dictionary.ts`):
+```typescript
+// Checks AsyncStorage cache first, then calls backend API
+async function lookupWord(word: string): Promise<DictionaryEntry> {
+  // 1. Check local cache
+  const cached = await AsyncStorage.getItem(`dict:${word}`);
+  if (cached) return JSON.parse(cached);
+  
+  // 2. Call backend API
+  const result = await api.get(`/dictionary/lookup`, { params: { word } });
+  
+  // 3. Cache locally for offline
+  await AsyncStorage.setItem(`dict:${word}`, JSON.stringify(result.data));
+  
+  return result.data;
+}
+```
+
+---
+
+## 7. Authentication Flow Adaptation
+
+### Decision: **JWT with Refresh Tokens** (Custom Flow, not NextAuth)
+
+### Rationale
+
+The existing backend uses **NextAuth** which is optimized for web sessions. For mobile:
+- ✅ **JWT Access Tokens** (short-lived, 15 minutes) stored in memory
+- ✅ **Refresh Tokens** (long-lived, 30 days) stored in SecureStore
+- ✅ Refresh token rotation on each use (security best practice)
+- ✅ Reuse existing backend JWT infrastructure (`jsonwebtoken` library)
+- ✅ Add mobile-specific endpoints: `/api/auth/mobile/login`, `/api/auth/mobile/refresh`
+
+**Why not NextAuth directly**:
+- NextAuth designed for server-side sessions with cookies
+- Mobile needs token-based auth (no cookies)
+- NextAuth mobile support is complex and limited
+
+**Why not modify NextAuth**:
+- Cleaner to add dedicated mobile endpoints
+- Preserves existing web auth (if needed)
+- Simpler testing and maintenance
+
+### Implementation Notes
+
+**New Backend Endpoints**:
+
+`/api/auth/mobile/login` (POST):
+```typescript
+{
+  email: string,
+  password: string
+}
+→ Response: {
+  accessToken: string,  // JWT, 15min expiry
+  refreshToken: string, // 30 days
+  user: { id, name, email, avatar }
+}
+```
+
+`/api/auth/mobile/refresh` (POST):
+```typescript
+{
+  refreshToken: string
+}
+→ Response: {
+  accessToken: string,  // New JWT
+  refreshToken: string  // Rotated
+}
+```
+
+`/api/auth/mobile/logout` (POST):
+```typescript
+{
+  refreshToken: string
+}
+→ Invalidates refresh token in database
+```
+
+**Mobile Storage Strategy**:
+- **AccessToken**: In-memory only (React state/context), cleared on app close
+- **RefreshToken**: SecureStore (encrypted on device)
+- **User data**: AsyncStorage (name, avatar, preferences)
+
+**Mobile Auth Flow**:
+1. User logs in → Store refresh token in SecureStore, access token in memory
+2. API requests → Attach access token to `Authorization: Bearer` header
+3. Access token expires → Auto-refresh using refresh token
+4. Refresh succeeds → Update access token in memory, rotate refresh token
+5. Refresh fails → Redirect to login
+
+**Axios Interceptor** (`src/services/api/client.ts`):
+```typescript
+// Auto-refresh on 401
+api.interceptors.response.use(
+  response => response,
+  async error => {
+    if (error.response?.status === 401 && !error.config._retry) {
+      error.config._retry = true;
+      const newAccessToken = await refreshAccessToken();
+      error.config.headers['Authorization'] = `Bearer ${newAccessToken}`;
+      return api(error.config);
+    }
+    return Promise.reject(error);
+  }
+);
+```
+
+---
+
+## 8. Offline Sync Strategy
+
+### Decision: **Queue-based Background Sync** with Conflict Resolution
+
+### Rationale
+
+For offline capability with 10-lesson downloads:
+- ✅ **Queue all mutations** while offline (progress updates, recordings, vocabulary saves)
+- ✅ **Sync on reconnect** using background task
+- ✅ **Last-write-wins** for conflict resolution (simple, works for our use case)
+- ✅ **Exponential backoff** for failed syncs
+- ✅ **User notification** on sync completion/failure
+
+**Why this approach**:
+- Progress updates don't conflict (user-specific)
+- Recordings are single-user (no conflicts)
+- Vocabulary saves are append-only (minimal conflicts)
+- Last-write-wins sufficient (no collaborative editing)
+
+### Implementation Notes
+
+**Sync Queue Storage** (AsyncStorage):
+```typescript
+interface SyncQueueItem {
+  id: string;
+  type: 'progress' | 'recording' | 'vocabulary';
+  action: 'create' | 'update' | 'delete';
+  data: any;
+  timestamp: number;
+  retries: number;
+}
+```
+
+**Background Sync** (using `react-native-background-fetch`):
+```typescript
+// Triggered on network reconnect or app foreground
+async function processSyncQueue() {
+  const queue = await getSyncQueue();
+  for (const item of queue) {
+    try {
+      await syncItem(item);
+      await removeFromQueue(item.id);
+    } catch (error) {
+      item.retries++;
+      if (item.retries > 3) {
+        // Move to failed queue, notify user
+        await moveTo FailedQueue(item);
+      } else {
+        // Exponential backoff
+        await delay(Math.pow(2, item.retries) * 1000);
+      }
+    }
+  }
+}
+```
+
+**Conflict Resolution**:
+- **Progress**: Merge (take max completion percentage, sum practice time)
+- **Recordings**: Last-write-wins (only latest matters per spec clarification)
+- **Vocabulary**: Append (no conflicts, all saves preserved)
 
 ---
 
 ## Summary of Decisions
 
-| Category | Decision | Rationale |
-|----------|----------|-----------|
-| **Language** | TypeScript with React Native | Team familiarity, code sharing with web app, cross-platform support |
-| **Framework** | Expo (Managed Workflow) | Rapid development, built-in features, OTA updates, can eject if needed |
-| **Navigation** | React Navigation 6.x | Industry standard, excellent TypeScript support, active maintenance |
-| **State Management** | React Context + SWR | Lightweight, sufficient complexity, consistency with web app |
-| **Audio** | expo-av | Built-in, handles all requirements (speed, seek, background) |
-| **Storage** | AsyncStorage + SecureStore + FileSystem | Native, secure, handles all data types (prefs, tokens, files) |
-| **Testing** | Jest + RTL + Detox (selective) | Industry standard, fast feedback, accessibility-first approach |
-| **API Client** | axios with interceptors | Simple, robust, handles auth and errors centrally |
-| **UI Components** | Custom (React Native primitives) | Full control, smaller bundle, better performance than UI libraries |
-| **i18n** | i18next + react-i18next | Consistency with web app, robust, well-maintained |
-| **Icons** | react-native-vector-icons | Lightweight, extensive icon sets, customizable |
-| **Animations** | react-native-reanimated | 60 FPS guaranteed, runs on UI thread, smooth gestures |
+| Component | Decision | Key Reason |
+|-----------|----------|------------|
+| **Audio Player** | react-native-track-player | Background audio, native iOS integration |
+| **Video Player** | react-native-video | Direct stream support, lightweight |
+| **YouTube Integration** | Backend streaming + local caching | Offline support, ToS compliance, reuse backend logic |
+| **E2E Testing** | Detox | React Native-native, fast, great iOS support |
+| **Backend Testing** | Jest + Supertest | Standard Node.js stack, minimal changes |
+| **Project Type** | Bare React Native | Full control, smaller bundle, native access |
+| **Dictionary API** | Free Dictionary + Wiktionary (fallback) | Free, reliable, hybrid cache strategy |
+| **Authentication** | JWT + Refresh Tokens | Mobile-optimized, secure, reuse backend JWT |
+| **Offline Sync** | Queue-based with background fetch | Simple, reliable, last-write-wins |
 
 ---
 
 ## Next Steps
 
-With all technical decisions resolved, we can proceed to:
+✅ **Phase 0 Complete** - All technical decisions documented  
+→ **Proceed to Phase 1**: Generate data models and API contracts
 
-1. ✅ **Phase 1**: Design data models and API contracts ([data-model.md](./data-model.md))
-2. ✅ **Phase 1**: Document quickstart guide ([quickstart.md](./quickstart.md))
-3. → **Phase 2**: Break down into implementation tasks ([tasks.md](./tasks.md))
-
----
-
-**Research Complete**: 2024-12-16  
-**All NEEDS CLARIFICATION resolved**: ✅  
-**Ready for Phase 1**: Yes
+**Phase 1 Deliverables**:
+1. `data-model.md` - MongoDB schemas and TypeScript types
+2. `contracts/` - OpenAPI specs for mobile-backend APIs
+3. `quickstart.md` - Developer setup guide

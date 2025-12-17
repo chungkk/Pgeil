@@ -1,538 +1,563 @@
-# Quick Start Guide
+# Quickstart Guide: React Native German Learning App
 
-Get the German Learning mobile app running on your local machine in under 10 minutes.
-
-**Last Updated**: 2024-12-16  
-**Prerequisites**: macOS (for iOS development), Node.js 18+, Xcode 15+
+**Feature**: Native iOS Migration  
+**Date**: 2024-12-17  
+**Estimated Setup Time**: 60-90 minutes
 
 ---
 
-## 🚀 Quick Start (5 Minutes)
+## Prerequisites
 
-### Step 1: Install Dependencies
+### Required Software
 
-```bash
-# Install Node.js (if not installed)
-brew install node
+| Tool | Version | Purpose |
+|------|---------|---------|
+| **Node.js** | 20+ | Backend and mobile development |
+| **npm** | 10+ | Package management |
+| **Xcode** | 15+ | iOS development and simulator |
+| **CocoaPods** | 1.14+ | iOS dependency management |
+| **MongoDB** | 6+ | Database (or MongoDB Atlas) |
+| **Git** | 2.40+ | Version control |
 
-# Install Expo CLI globally
-npm install -g expo-cli
+### Recommended Software
 
-# Verify installation
-expo --version  # Should show 6.x.x
+- **React Native Debugger** - Enhanced debugging
+- **Postman/Insomnia** - API testing
+- **MongoDB Compass** - Database GUI
+- **VSCode** - Code editor with extensions:
+  - ES7+ React/Redux/React-Native snippets
+  - Prettier
+  - ESLint
+
+### System Requirements
+
+- **macOS** 12+ (required for iOS development)
+- **8GB RAM** minimum, 16GB recommended
+- **50GB free disk space** (Xcode, simulators, dependencies)
+
+---
+
+## Project Structure
+
+```
+Pgeil/
+├── ppgeil/                    # Backend (Next.js API) - Existing
+├── react-native/              # Mobile app (React Native) - New
+└── specs/                     # Documentation
+    └── 001-react-native-migration/
+        ├── spec.md
+        ├── plan.md
+        ├── research.md
+        ├── data-model.md
+        ├── quickstart.md (this file)
+        └── contracts/
 ```
 
-### Step 2: Create Project
+---
+
+## Part 1: Backend Setup (Next.js API)
+
+### 1.1 Clone Repository
 
 ```bash
-# Navigate to repo root
-cd "/Users/chungkk/Desktop/GG Driver/code/code new 29.8"
-
-# Create new Expo app
-npx create-expo-app@latest german-shadowing-app --template expo-template-blank-typescript
-
-# Navigate into project
-cd german-shadowing-app
-
-# Install additional dependencies
-npm install @react-navigation/native @react-navigation/stack @react-navigation/bottom-tabs
-npm install react-native-screens react-native-safe-area-context
-npm install axios swr
-npm install @react-native-async-storage/async-storage
-npm install expo-secure-store expo-av expo-file-system
-npm install react-native-vector-icons
-npm install i18next react-i18next
+cd /Users/chungkk/Desktop/GG\ Driver/code/Pgeil
+git status  # Confirm on 001-react-native-migration branch
 ```
 
-### Step 3: Configure Environment
+### 1.2 Install Backend Dependencies
 
 ```bash
-# Create .env file
-cat > .env << 'EOF'
-EXPO_PUBLIC_API_URL=http://localhost:3000/api
-EXPO_PUBLIC_APP_NAME=PapaGeil
-EOF
+cd ppgeil
+npm install
 ```
 
-### Step 4: Start Development Server
+### 1.3 Configure Environment Variables
+
+Create `.env.local` file:
 
 ```bash
-# Start Expo dev server
-npm start
+cp .env.example .env.local
+```
 
-# In another terminal, start backend (if running locally)
-cd ..  # Back to repo root
+Edit `.env.local`:
+
+```env
+# Database
+MONGODB_URI=mongodb://localhost:27017/german-learning-app
+# Or MongoDB Atlas:
+# MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/german-learning-app
+
+# Authentication
+JWT_SECRET=your-super-secret-jwt-key-minimum-32-characters
+JWT_REFRESH_SECRET=your-refresh-token-secret-key-32-chars
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=your-nextauth-secret-32-characters
+
+# Google OAuth (if using)
+GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+
+# OpenAI (pronunciation scoring)
+OPENAI_API_KEY=sk-...
+
+# Email (optional - for verification emails)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-email@gmail.com
+SMTP_PASSWORD=your-app-password
+
+# YouTube (optional - if custom API key needed)
+# YOUTUBE_API_KEY=your-youtube-api-key
+```
+
+### 1.4 Start MongoDB
+
+**Option A: Local MongoDB**
+```bash
+# Install via Homebrew
+brew tap mongodb/brew
+brew install mongodb-community
+
+# Start MongoDB
+brew services start mongodb-community
+
+# Verify running
+mongo --eval "db.version()"
+```
+
+**Option B: MongoDB Atlas (Cloud)**
+1. Create account at https://www.mongodb.com/cloud/atlas
+2. Create free M0 cluster
+3. Get connection string
+4. Add to `.env.local`
+
+### 1.5 Seed Database (Optional)
+
+```bash
+# Run seeder script (if available)
+node scripts/seed-database.js
+
+# Or manually create admin user:
+node scripts/create-admin.js
+```
+
+### 1.6 Start Backend Server
+
+```bash
 npm run dev
 ```
 
-### Step 5: Run on iOS Simulator
+Backend running at: **http://localhost:3000**
+
+### 1.7 Test Backend API
 
 ```bash
-# Press 'i' in the Expo terminal, or:
-npm run ios
-```
+# Health check
+curl http://localhost:3000/api/health
 
-**Expected Result**: iOS Simulator opens and shows the default Expo app. If you see this, you're ready to start building!
-
----
-
-## 📁 Project Structure Setup
-
-Create the recommended folder structure:
-
-```bash
-cd german-shadowing-app
-
-# Create directory structure
-mkdir -p src/{navigation,screens,components,services,context,hooks,types,utils,styles}
-mkdir -p src/components/{atoms,molecules,organisms}
-mkdir -p src/screens/{Home,Lesson,Dictation,Profile,Auth}
-mkdir -p __tests__/{unit,integration,e2e}
-mkdir -p assets/{images,fonts}
-
-# Create placeholder files
-touch src/navigation/AppNavigator.tsx
-touch src/services/api.ts
-touch src/services/auth.ts
-touch src/context/AuthContext.tsx
-touch src/styles/colors.ts
-touch src/types/Lesson.ts
-touch src/types/User.ts
+# Test login (if seeded)
+curl -X POST http://localhost:3000/api/auth/mobile/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","password":"Test123!@"}'
 ```
 
 ---
 
-## 🔧 Configuration Files
+## Part 2: Mobile App Setup (React Native)
 
-### app.json
+### 2.1 Initialize React Native Project
 
-Update your `app.json`:
+```bash
+cd /Users/chungkk/Desktop/GG\ Driver/code/Pgeil
 
-```json
-{
-  "expo": {
-    "name": "PapaGeil",
-    "slug": "papageil-german-learning",
-    "version": "1.0.0",
-    "orientation": "portrait",
-    "icon": "./assets/icon.png",
-    "userInterfaceStyle": "automatic",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
-    "assetBundlePatterns": [
-      "**/*"
+# Create React Native app
+npx react-native@latest init PapaGeil --template react-native-template-typescript
+
+# Rename to match our structure
+mv PapaGeil react-native
+cd react-native
+```
+
+### 2.2 Install Dependencies
+
+```bash
+# Core navigation
+npm install @react-navigation/native @react-navigation/stack @react-navigation/bottom-tabs
+npm install react-native-screens react-native-safe-area-context
+npm install react-native-gesture-handler react-native-reanimated
+
+# Audio/Video
+npm install react-native-track-player react-native-video
+
+# Storage
+npm install @react-native-async-storage/async-storage react-native-secure-storage
+
+# Speech recognition
+npm install @react-native-voice/voice
+
+# Network
+npm install axios @react-native-community/netinfo
+
+# UI Components
+npm install react-native-vector-icons
+
+# i18n
+npm install react-i18next i18next
+
+# Date utilities
+npm install date-fns
+
+# Install iOS pods
+cd ios
+pod install
+cd ..
+```
+
+### 2.3 Configure Environment
+
+Create `.env` file:
+
+```bash
+# Copy example
+cp .env.example .env
+```
+
+Edit `.env`:
+
+```env
+# API Base URL
+API_BASE_URL=http://localhost:3000
+# For physical device, use computer's IP:
+# API_BASE_URL=http://192.168.1.100:3000
+
+# Environment
+NODE_ENV=development
+
+# Feature Flags
+ENABLE_OFFLINE_MODE=true
+ENABLE_LEADERBOARD=true
+MAX_OFFLINE_LESSONS=10
+```
+
+### 2.4 Setup iOS Configuration
+
+Edit `ios/PapaGeil/Info.plist`:
+
+```xml
+<!-- Microphone Permission -->
+<key>NSMicrophoneUsageDescription</key>
+<string>We need access to your microphone for pronunciation practice</string>
+
+<!-- Camera Permission (optional, for profile photo) -->
+<key>NSCameraUsageDescription</key>
+<string>We need access to your camera for profile photo</string>
+
+<!-- Photo Library Permission -->
+<key>NSPhotoLibraryUsageDescription</key>
+<string>We need access to your photo library for profile photo</string>
+
+<!-- Allow HTTP (development only) -->
+<key>NSAppTransportSecurity</key>
+<dict>
+  <key>NSAllowsArbitraryLoads</key>
+  <true/>
+</dict>
+```
+
+### 2.5 Configure react-native-track-player
+
+Create `react-native/src/services/audio/setup.ts`:
+
+```typescript
+import TrackPlayer, { Capability } from 'react-native-track-player';
+
+export async function setupAudioPlayer() {
+  await TrackPlayer.setupPlayer();
+  await TrackPlayer.updateOptions({
+    capabilities: [
+      Capability.Play,
+      Capability.Pause,
+      Capability.Stop,
+      Capability.SeekTo,
+      Capability.SkipToNext,
+      Capability.SkipToPrevious,
     ],
-    "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.papageil.app",
-      "buildNumber": "1",
-      "infoPlist": {
-        "UIBackgroundModes": ["audio"],
-        "NSMicrophoneUsageDescription": "This app needs access to the microphone for pronunciation practice.",
-        "NSCameraUsageDescription": "This app needs camera access to scan QR codes."
-      }
-    },
-    "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      },
-      "package": "com.papageil.app"
-    },
-    "web": {
-      "favicon": "./assets/favicon.png"
-    },
-    "plugins": [
-      "expo-av",
-      "expo-secure-store",
-      "@react-native-async-storage/async-storage"
-    ],
-    "extra": {
-      "apiUrl": process.env.EXPO_PUBLIC_API_URL
-    }
-  }
+    compactCapabilities: [Capability.Play, Capability.Pause],
+  });
 }
 ```
 
-### tsconfig.json
+### 2.6 Create Project Structure
 
-Update `tsconfig.json` for path aliases:
+```bash
+# Create directories
+mkdir -p src/{navigation,screens,components,services,context,hooks,utils,styles,assets,types}
+mkdir -p src/screens/{Auth,Home,Lesson,Dictation,Dictionary,Profile,Leaderboard}
+mkdir -p src/components/{atoms,molecules,organisms}
+mkdir -p src/services/{api,storage,audio,youtube}
+mkdir -p src/assets/{images,fonts,locales}
+
+# Create placeholder files
+touch src/App.tsx
+touch src/navigation/AppNavigator.tsx
+touch src/services/api/client.ts
+```
+
+### 2.7 Configure TypeScript
+
+Edit `tsconfig.json`:
 
 ```json
 {
-  "extends": "expo/tsconfig.base",
+  "extends": "@react-native/typescript-config/tsconfig.json",
   "compilerOptions": {
-    "strict": true,
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"],
-      "@components/*": ["src/components/*"],
-      "@screens/*": ["src/screens/*"],
-      "@services/*": ["src/services/*"],
-      "@hooks/*": ["src/hooks/*"],
-      "@types/*": ["src/types/*"],
-      "@utils/*": ["src/utils/*"],
-      "@styles/*": ["src/styles/*"],
-      "@context/*": ["src/context/*"],
-      "@navigation/*": ["src/navigation/*"]
+      "@/components/*": ["src/components/*"],
+      "@/screens/*": ["src/screens/*"],
+      "@/services/*": ["src/services/*"],
+      "@/utils/*": ["src/utils/*"]
     }
   },
-  "include": [
-    "**/*.ts",
-    "**/*.tsx",
-    ".expo/types/**/*.ts",
-    "expo-env.d.ts"
-  ]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "ios", "android"]
 }
 ```
 
+### 2.8 Start Metro Bundler
+
+```bash
+npm start
+```
+
+### 2.9 Run on iOS Simulator
+
+```bash
+# In a new terminal
+npm run ios
+
+# Or open in Xcode
+open ios/PapaGeil.xcworkspace
+# Then press Cmd+R to build and run
+```
+
 ---
 
-## 🎨 Initial Code Samples
+## Part 3: Verification
 
-### src/services/api.ts
+### 3.1 Backend Health Check
+
+```bash
+curl http://localhost:3000/api/health
+
+# Expected:
+# {"success":true,"message":"API is healthy"}
+```
+
+### 3.2 Mobile App Launch
+
+1. App should launch on iOS simulator
+2. You should see the initial splash/welcome screen
+3. No red error screens
+
+### 3.3 API Connection Test
+
+Add this to `App.tsx`:
 
 ```typescript
-import axios from 'axios';
-import * as SecureStore from 'expo-secure-store';
-
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000/api';
-
-const api = axios.create({
-  baseURL: API_URL,
-  timeout: 10000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// Request interceptor: Add auth token
-api.interceptors.request.use(
-  async (config) => {
-    const token = await SecureStore.getItemAsync('auth_token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-
-// Response interceptor: Handle errors
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    if (error.response?.status === 401) {
-      // Clear token and redirect to login
-      await SecureStore.deleteItemAsync('auth_token');
-      // TODO: Navigate to login screen
-    }
-    return Promise.reject(error);
-  }
-);
-
-export default api;
+useEffect(() => {
+  fetch('http://localhost:3000/api/health')
+    .then(res => res.json())
+    .then(data => console.log('API Health:', data))
+    .catch(err => console.error('API Error:', err));
+}, []);
 ```
 
-### src/types/Lesson.ts
+Check Metro logs for "API Health: {success: true}"
 
-```typescript
-export interface Lesson {
-  id: string;
-  title: string;
-  description: string;
-  difficulty: 'beginner' | 'intermediate' | 'advanced';
-  category: Category;
-  categorySlug: string;
-  audioUrl: string;
-  videoUrl?: string;
-  thumbnailUrl: string;
-  duration: number;
-  transcript: TranscriptSegment[];
-  viewCount: number;
-  createdAt: string;
-  updatedAt: string;
-  userProgress?: UserLessonProgress;
-  isDownloaded?: boolean;
-}
+---
 
-export interface TranscriptSegment {
-  id: string;
-  text: string;
-  translation?: string;
-  startTime: number;
-  endTime: number;
-}
+## Part 4: Development Workflow
 
-export interface Category {
-  id: string;
-  name: string;
-  slug: string;
-  description?: string;
-  color?: string;
-}
+### 4.1 Running Both Services
 
-export interface UserLessonProgress {
-  id: string;
-  status: 'not_started' | 'in_progress' | 'completed';
-  playbackPosition: number;
-  completionPercentage: number;
-  pointsEarned: number;
-  accuracyScore?: number;
-  attemptsCount: number;
-  startedAt?: string;
-  completedAt?: string;
-  lastAccessedAt: string;
-}
+**Terminal 1 - Backend:**
+```bash
+cd ppgeil
+npm run dev
 ```
 
-### App.tsx (Minimal Setup)
+**Terminal 2 - Mobile:**
+```bash
+cd react-native
+npm start
+```
 
-```typescript
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+**Terminal 3 - iOS:**
+```bash
+cd react-native
+npm run ios
+```
 
-export default function App() {
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>PapaGeil</Text>
-      <Text style={styles.subtitle}>German Learning App</Text>
-      <StatusBar style="auto" />
-    </View>
-  );
-}
+### 4.2 Hot Reload
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#666',
-  },
-});
+- **Backend**: Automatic restart on file changes (Next.js)
+- **Mobile**: Fast Refresh enabled by default
+- Press **`r`** in Metro terminal to reload
+- Press **`d`** to open developer menu in simulator
+
+### 4.3 Debugging
+
+**React Native Debugger:**
+```bash
+# Install
+brew install --cask react-native-debugger
+
+# Run
+open "rndebugger://set-debugger-loc?host=localhost&port=8081"
+```
+
+**iOS Simulator Debug Menu:**
+- Press **Cmd+D** in simulator
+- Enable "Debug" or "Element Inspector"
+
+**Console Logs:**
+- View in Metro terminal
+- Or check Xcode console (Cmd+Shift+C in Xcode)
+
+---
+
+## Part 5: Common Issues & Solutions
+
+### Issue: "Pod install failed"
+
+```bash
+cd ios
+pod deintegrate
+pod install
+```
+
+### Issue: "Unable to resolve module"
+
+```bash
+# Clear Metro cache
+npm start -- --reset-cache
+
+# Clear watchman
+watchman watch-del-all
+
+# Reinstall
+rm -rf node_modules
+npm install
+cd ios && pod install && cd ..
+```
+
+### Issue: "Cannot connect to backend"
+
+**For physical device:**
+1. Find computer's local IP: `ifconfig | grep "inet "`
+2. Update `.env`: `API_BASE_URL=http://192.168.1.100:3000`
+3. Ensure both devices on same Wi-Fi network
+
+### Issue: "Google OAuth not working"
+
+1. Get OAuth client IDs from Google Cloud Console
+2. Add to backend `.env.local`
+3. Configure redirect URIs in Google Console
+
+### Issue: "MongoDB connection failed"
+
+```bash
+# Check MongoDB running
+brew services list | grep mongodb
+
+# Restart
+brew services restart mongodb-community
+
+# Check logs
+tail -f /usr/local/var/log/mongodb/mongo.log
 ```
 
 ---
 
-## 🧪 Testing Setup
+## Part 6: Next Steps
 
-### Install Testing Dependencies
+### Immediate Tasks
 
-```bash
-npm install --save-dev @testing-library/react-native @testing-library/jest-native
-npm install --save-dev jest-expo
-```
+1. ✅ Backend and mobile running
+2. → **Implement authentication screens** (Login, Register)
+3. → **Implement home screen** (Lesson list)
+4. → **Connect to backend API** (auth service)
 
-### jest.config.js
+### Development Order
 
-```javascript
-module.exports = {
-  preset: 'jest-expo',
-  transformIgnorePatterns: [
-    'node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg)',
-  ],
-  setupFilesAfterEnv: ['<rootDir>/jest-setup.ts'],
-  collectCoverageFrom: [
-    'src/**/*.{ts,tsx}',
-    '!src/**/*.d.ts',
-    '!src/**/*.stories.tsx',
-  ],
-};
-```
+**Phase 1: Authentication (Week 1)**
+- [ ] Login screen
+- [ ] Register screen
+- [ ] Auth service integration
+- [ ] Token storage (SecureStore)
+- [ ] Auto-refresh interceptor
 
-### jest-setup.ts
+**Phase 2: Core Screens (Week 2-3)**
+- [ ] Home screen (lesson list)
+- [ ] Lesson detail screen
+- [ ] Video player integration
+- [ ] Progress tracking
 
-```typescript
-import '@testing-library/jest-native/extend-expect';
+**Phase 3: Features (Week 4-6)**
+- [ ] Shadowing mode
+- [ ] Dictation exercises
+- [ ] Dictionary integration
+- [ ] Offline downloads
 
-// Mock Expo modules
-jest.mock('expo-secure-store');
-jest.mock('@react-native-async-storage/async-storage');
-jest.mock('expo-av');
-```
+### Documentation References
 
-### Example Test
+- [Spec](./spec.md) - Feature requirements
+- [Plan](./plan.md) - Implementation strategy
+- [Research](./research.md) - Technology decisions
+- [Data Model](./data-model.md) - Database schemas
+- [API Contracts](./contracts/) - Backend API specs
 
-Create `__tests__/unit/services/api.test.ts`:
-
-```typescript
-import api from '@/services/api';
-
-describe('API Client', () => {
-  it('should have correct base URL', () => {
-    expect(api.defaults.baseURL).toBeDefined();
-  });
-
-  it('should have timeout configured', () => {
-    expect(api.defaults.timeout).toBe(10000);
-  });
-});
-```
-
-Run tests:
+### Useful Commands
 
 ```bash
-npm test
+# Backend
+npm run dev          # Start development server
+npm run build        # Build for production
+npm run lint         # Run ESLint
+
+# Mobile
+npm start            # Start Metro bundler
+npm run ios          # Run on iOS simulator
+npm run ios --device # Run on physical device
+npm test             # Run Jest tests
+npm run lint         # Run ESLint
 ```
 
 ---
 
-## 🔌 Connect to Backend
+## Support
 
-### Option 1: Local Backend (Recommended for Development)
-
-1. Start Next.js backend:
-   ```bash
-   cd "/Users/chungkk/Desktop/GG Driver/code/code new 29.8"
-   npm run dev  # Starts on http://localhost:3000
-   ```
-
-2. Update mobile app `.env`:
-   ```
-   EXPO_PUBLIC_API_URL=http://localhost:3000/api
-   ```
-
-3. **Important for iOS Simulator**: Use `http://localhost:3000`, NOT `http://127.0.0.1:3000`
-
-### Option 2: Production Backend
-
-```
-EXPO_PUBLIC_API_URL=https://papageil.net/api
-```
-
-### Test Connection
-
-```typescript
-// src/services/__tests__/api-connection.test.ts
-import api from '@/services/api';
-
-test('API connection works', async () => {
-  const response = await api.get('/lessons?limit=1');
-  expect(response.status).toBe(200);
-  expect(response.data.lessons).toBeDefined();
-});
-```
+**Issues**: Create GitHub issues with logs and steps to reproduce  
+**Documentation**: See `/specs/001-react-native-migration/`  
+**Backend Logs**: `ppgeil/.next/trace` and console output  
+**Mobile Logs**: Metro bundler output and Xcode console
 
 ---
 
-## 📱 Debugging Tips
+## Checklist
 
-### Common Issues
+Before starting development, ensure:
 
-**Issue**: "Unable to resolve module"  
-**Solution**: Clear cache and restart:
-```bash
-expo start -c
-```
+- [ ] Backend running on http://localhost:3000
+- [ ] MongoDB connected and accessible
+- [ ] Mobile app launches on iOS simulator
+- [ ] API connection test passes
+- [ ] Environment variables configured
+- [ ] Xcode simulator available
+- [ ] All dependencies installed (no errors)
+- [ ] Hot reload working for both backend and mobile
+- [ ] Debugger tools accessible
 
-**Issue**: iOS simulator shows white screen  
-**Solution**: Reload app (Cmd + R in simulator)
-
-**Issue**: API requests fail with network error  
-**Solution**: 
-- Check backend is running (`curl http://localhost:3000/api/lessons`)
-- Check `.env` file has correct `EXPO_PUBLIC_API_URL`
-- Restart Expo dev server
-
-### Debug Menu
-
-- iOS Simulator: Cmd + D
-- Physical iOS Device: Shake device
-
-### Useful Debug Tools
-
-```bash
-# View logs
-expo start --clear
-
-# Run with different port
-expo start --port 19001
-
-# Check bundle size
-npx expo-cli export --dump-sourcemap
-```
-
----
-
-## 🚢 Building for iOS
-
-### Development Build
-
-```bash
-# Install EAS CLI
-npm install -g eas-cli
-
-# Login to Expo
-eas login
-
-# Configure build
-eas build:configure
-
-# Build for iOS simulator
-eas build --platform ios --profile development-simulator
-
-# Build for physical device (development)
-eas build --platform ios --profile development
-```
-
-### Production Build
-
-```bash
-# Build for App Store
-eas build --platform ios --profile production
-
-# Submit to App Store
-eas submit --platform ios
-```
-
----
-
-## 📚 Next Steps
-
-1. **Implement Navigation**: Set up React Navigation stack and tabs
-2. **Create Home Screen**: Lesson browsing with categories
-3. **Build Lesson Detail**: Audio player with transcript
-4. **Add Authentication**: Login/register screens
-5. **Implement Offline**: Download lessons for offline access
-
-**Reference Documentation**:
-- [spec.md](./spec.md) - Feature specification
-- [data-model.md](./data-model.md) - Data entities
-- [contracts/](./contracts/) - API contracts
-- [research.md](./research.md) - Technical decisions
-
----
-
-## 🆘 Getting Help
-
-**Expo Documentation**: https://docs.expo.dev  
-**React Navigation**: https://reactnavigation.org  
-**React Native**: https://reactnative.dev
-
-**Common Commands**:
-```bash
-npm start              # Start dev server
-npm run ios            # Run on iOS simulator
-npm run android        # Run on Android emulator
-npm test               # Run tests
-npm run lint           # Lint code
-expo doctor            # Check for issues
-```
-
----
-
-**Setup Complete!** 🎉
-
-You should now have a working development environment. Start building by implementing the home screen (lesson list) as defined in User Story 1 of the spec.
+**Setup Complete!** 🎉 Ready for development.

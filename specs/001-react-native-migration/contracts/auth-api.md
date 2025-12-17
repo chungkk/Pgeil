@@ -1,308 +1,498 @@
-# Authentication API
+# Authentication API Contract
 
-Handles user authentication, registration, and session management.
+**Version**: 1.0  
+**Base URL**: `/api/auth/mobile`  
+**Authentication**: Public (login/register), Bearer token (refresh/logout)
+
+---
 
 ## Endpoints
 
-### POST /api/auth/register
+### 1. Login
+
+**POST** `/api/auth/mobile/login`
+
+Authenticate user with email/password and return JWT tokens.
+
+#### Request
+
+```http
+POST /api/auth/mobile/login
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "password": "SecurePass123!"
+}
+```
+
+#### Response (Success)
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "success": true,
+  "data": {
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "user": {
+      "id": "507f1f77bcf86cd799439011",
+      "email": "user@example.com",
+      "name": "John Doe",
+      "avatar": "https://example.com/avatar.jpg",
+      "preferredLanguage": "vi",
+      "theme": "light",
+      "playbackSpeed": 1,
+      "totalLessonsCompleted": 5,
+      "totalPracticeTime": 3600,
+      "averageAccuracyScore": 85,
+      "currentStreak": 3,
+      "totalPoints": 450
+    }
+  },
+  "message": "Login successful"
+}
+```
+
+#### Response (Error - Invalid Credentials)
+
+```http
+HTTP/1.1 401 Unauthorized
+Content-Type: application/json
+
+{
+  "success": false,
+  "error": {
+    "code": "INVALID_CREDENTIALS",
+    "message": "Email or password is incorrect"
+  }
+}
+```
+
+#### Response (Error - Email Not Verified)
+
+```http
+HTTP/1.1 403 Forbidden
+Content-Type: application/json
+
+{
+  "success": false,
+  "error": {
+    "code": "EMAIL_NOT_VERIFIED",
+    "message": "Please verify your email before logging in"
+  }
+}
+```
+
+---
+
+### 2. Register
+
+**POST** `/api/auth/mobile/register`
 
 Create a new user account.
 
-**Authentication**: None required
+#### Request
 
-**Request Body**:
-```json
+```http
+POST /api/auth/mobile/register
+Content-Type: application/json
+
 {
-  "name": "string",           // 2-50 characters
-  "email": "string",          // Valid email format
-  "password": "string",       // Min 8 characters
-  "nativeLanguage": "vi"      // 'de' | 'vi' | 'en'
+  "email": "newuser@example.com",
+  "password": "SecurePass123!",
+  "name": "Jane Doe",
+  "preferredLanguage": "vi"
 }
 ```
 
-**Response 201**:
-```json
+#### Response (Success)
+
+```http
+HTTP/1.1 201 Created
+Content-Type: application/json
+
 {
-  "user": {
-    "id": "user_123",
-    "name": "John Doe",
-    "email": "john@example.com",
-    "role": "user",
-    "nativeLanguage": "vi",
-    "level": "beginner",
-    "points": 0,
-    "streak": 0,
-    "createdAt": "2024-12-16T10:00:00Z"
+  "success": true,
+  "data": {
+    "userId": "507f1f77bcf86cd799439012",
+    "email": "newuser@example.com",
+    "name": "Jane Doe"
   },
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "refreshToken": "refresh_abc123..."
+  "message": "Registration successful. Please check your email for verification link."
 }
 ```
 
-**Errors**:
-- `400 BAD_REQUEST`: Invalid input (email format, password too short)
-- `409 CONFLICT`: Email already exists
+#### Response (Error - Email Already Exists)
 
----
+```http
+HTTP/1.1 409 Conflict
+Content-Type: application/json
 
-### POST /api/auth/login
-
-Authenticate existing user.
-
-**Authentication**: None required
-
-**Request Body**:
-```json
 {
-  "email": "string",
-  "password": "string"
+  "success": false,
+  "error": {
+    "code": "EMAIL_EXISTS",
+    "message": "An account with this email already exists"
+  }
 }
 ```
 
-**Response 200**:
-```json
+#### Response (Error - Validation)
+
+```http
+HTTP/1.1 400 Bad Request
+Content-Type: application/json
+
 {
-  "user": {
-    "id": "user_123",
-    "name": "John Doe",
-    "email": "john@example.com",
-    "role": "user",
-    "nativeLanguage": "vi",
-    "level": "beginner",
-    "points": 120,
-    "streak": 3,
-    "lastActivityDate": "2024-12-15T10:00:00Z",
-    "preferences": {
-      "defaultPlaybackSpeed": 1.0,
-      "interfaceLanguage": "vi",
-      "theme": "system",
-      "autoPlayNext": true
-    },
-    "stats": {
-      "totalLessonsCompleted": 5,
-      "totalTimeSpent": 180,
-      "averageAccuracy": 85,
-      "longestStreak": 5,
-      "lessonsThisWeek": 3,
-      "lessonsThisMonth": 5
+  "success": false,
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Invalid request data",
+    "details": {
+      "password": "Password must be at least 8 characters",
+      "email": "Invalid email format"
     }
+  }
+}
+```
+
+---
+
+### 3. Google OAuth Login
+
+**POST** `/api/auth/mobile/google`
+
+Authenticate using Google OAuth ID token.
+
+#### Request
+
+```http
+POST /api/auth/mobile/google
+Content-Type: application/json
+
+{
+  "idToken": "ya29.a0AfH6SMBx..."
+}
+```
+
+#### Response (Success)
+
+Same as `/login` response structure.
+
+#### Response (Error - Invalid Token)
+
+```http
+HTTP/1.1 401 Unauthorized
+Content-Type: application/json
+
+{
+  "success": false,
+  "error": {
+    "code": "INVALID_TOKEN",
+    "message": "Google ID token is invalid or expired"
+  }
+}
+```
+
+---
+
+### 4. Refresh Token
+
+**POST** `/api/auth/mobile/refresh`
+
+Exchange refresh token for new access token.
+
+#### Request
+
+```http
+POST /api/auth/mobile/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+
+#### Response (Success)
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "success": true,
+  "data": {
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...", // New token
+    "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." // Rotated token
   },
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "refreshToken": "refresh_abc123..."
+  "message": "Token refreshed successfully"
 }
 ```
 
-**Errors**:
-- `400 BAD_REQUEST`: Missing email or password
-- `401 UNAUTHORIZED`: Invalid credentials
+#### Response (Error - Invalid Refresh Token)
 
----
+```http
+HTTP/1.1 401 Unauthorized
+Content-Type: application/json
 
-### GET /api/auth/me
-
-Get current authenticated user's profile.
-
-**Authentication**: Required (Bearer token)
-
-**Response 200**:
-```json
 {
-  "user": {
-    "id": "user_123",
-    "name": "John Doe",
-    "email": "john@example.com",
-    "role": "user",
-    "avatarUrl": "https://...",
-    "nativeLanguage": "vi",
-    "level": "intermediate",
-    "points": 1250,
-    "streak": 12,
-    "lastActivityDate": "2024-12-16T09:30:00Z",
-    "preferences": {
-      "defaultPlaybackSpeed": 1.25,
-      "interfaceLanguage": "vi",
-      "theme": "dark",
-      "autoPlayNext": false,
-      "downloadQuality": "high"
-    },
-    "stats": {
-      "totalLessonsCompleted": 42,
-      "totalTimeSpent": 1800,
-      "averageAccuracy": 88,
-      "longestStreak": 15,
-      "lessonsThisWeek": 7,
-      "lessonsThisMonth": 28
-    },
-    "createdAt": "2024-10-01T10:00:00Z",
-    "updatedAt": "2024-12-16T09:30:00Z"
+  "success": false,
+  "error": {
+    "code": "INVALID_REFRESH_TOKEN",
+    "message": "Refresh token is invalid or expired"
   }
 }
 ```
 
-**Errors**:
-- `401 UNAUTHORIZED`: Invalid or expired token
-
 ---
 
-### POST /api/auth/refresh
+### 5. Logout
 
-Refresh access token using refresh token.
+**POST** `/api/auth/mobile/logout`
 
-**Authentication**: None required (uses refresh token in body)
+Invalidate refresh token (revoke session).
 
-**Request Body**:
-```json
+#### Request
+
+```http
+POST /api/auth/mobile/logout
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+Content-Type: application/json
+
 {
-  "refreshToken": "refresh_abc123..."
+  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 }
 ```
 
-**Response 200**:
-```json
+#### Response (Success)
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+
 {
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "refreshToken": "refresh_def456..."
-}
-```
-
-**Errors**:
-- `401 UNAUTHORIZED`: Invalid or expired refresh token
-
----
-
-### POST /api/auth/change-password
-
-Change user's password (requires current password).
-
-**Authentication**: Required (Bearer token)
-
-**Request Body**:
-```json
-{
-  "currentPassword": "string",
-  "newPassword": "string"    // Min 8 characters
-}
-```
-
-**Response 200**:
-```json
-{
-  "message": "Password changed successfully"
-}
-```
-
-**Errors**:
-- `400 BAD_REQUEST`: New password too short
-- `401 UNAUTHORIZED`: Invalid current password
-
----
-
-### POST /api/auth/logout
-
-Invalidate current session token.
-
-**Authentication**: Required (Bearer token)
-
-**Request Body**: None
-
-**Response 200**:
-```json
-{
-  "message": "Logged out successfully"
+  "success": true,
+  "message": "Logout successful"
 }
 ```
 
 ---
 
-### POST /api/auth/update-profile
+### 6. Request Password Reset
 
-Update user profile information.
+**POST** `/api/auth/mobile/reset-password`
 
-**Authentication**: Required (Bearer token)
+Request password reset email.
 
-**Request Body** (all fields optional):
-```json
+#### Request
+
+```http
+POST /api/auth/mobile/reset-password
+Content-Type: application/json
+
 {
-  "name": "string",
-  "nativeLanguage": "en",
-  "level": "intermediate",
-  "avatarUrl": "https://...",
-  "preferences": {
-    "defaultPlaybackSpeed": 1.5,
-    "interfaceLanguage": "en",
-    "theme": "light",
-    "autoPlayNext": false,
-    "downloadQuality": "medium"
+  "email": "user@example.com"
+}
+```
+
+#### Response (Success)
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "success": true,
+  "message": "Password reset email sent. Please check your inbox."
+}
+```
+
+**Note**: Returns success even if email doesn't exist (security best practice to prevent email enumeration).
+
+---
+
+### 7. Verify Email
+
+**GET** `/api/auth/mobile/verify-email?token={verificationToken}`
+
+Verify user email address.
+
+#### Request
+
+```http
+GET /api/auth/mobile/verify-email?token=abc123def456
+```
+
+#### Response (Success)
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "success": true,
+  "message": "Email verified successfully. You can now log in."
+}
+```
+
+#### Response (Error - Invalid/Expired Token)
+
+```http
+HTTP/1.1 400 Bad Request
+Content-Type: application/json
+
+{
+  "success": false,
+  "error": {
+    "code": "INVALID_VERIFICATION_TOKEN",
+    "message": "Verification token is invalid or expired"
   }
 }
 ```
 
-**Response 200**:
-```json
-{
-  "user": {
-    // Updated user object
-  }
-}
-```
-
-**Errors**:
-- `400 BAD_REQUEST`: Invalid field values
-
 ---
 
-## OAuth2 / Google Sign-In
+## Data Models
 
-### POST /api/auth/[...nextauth]
+### User (Response)
 
-Handled by NextAuth.js. Mobile app should use the following flow:
-
-1. Open Google OAuth consent screen in WebView/browser
-2. User authorizes
-3. Receive callback with authorization code
-4. Exchange code for token via NextAuth
-
-**Mobile Implementation**:
 ```typescript
-// Use expo-auth-session for Google OAuth
-import * as Google from 'expo-auth-session/providers/google';
-
-const [request, response, promptAsync] = Google.useAuthRequest({
-  expoClientId: 'YOUR_EXPO_CLIENT_ID',
-  iosClientId: 'YOUR_IOS_CLIENT_ID',
-  androidClientId: 'YOUR_ANDROID_CLIENT_ID',
-  webClientId: 'YOUR_WEB_CLIENT_ID',
-});
-
-// After successful auth, backend handles token generation
-```
-
----
-
-## Token Format
-
-JWT tokens contain:
-
-```json
-{
-  "userId": "user_123",
-  "email": "john@example.com",
-  "role": "user",
-  "iat": 1702728000,      // Issued at
-  "exp": 1702814400       // Expires at (24 hours later)
+interface User {
+  id: string;
+  email: string;
+  name: string;
+  avatar: string | null;
+  preferredLanguage: 'de' | 'vi' | 'en';
+  theme: 'light' | 'dark';
+  playbackSpeed: 0.5 | 0.75 | 1 | 1.25 | 1.5;
+  totalLessonsCompleted: number;
+  totalPracticeTime: number; // seconds
+  averageAccuracyScore: number; // 0-100
+  currentStreak: number;
+  longestStreak: number;
+  totalPoints: number;
+  emailVerified: boolean;
+  createdAt: string; // ISO 8601
 }
 ```
 
-**Token Lifetime**:
-- Access token: 24 hours
-- Refresh token: 30 days
+### JWT Payload
+
+```typescript
+interface JWTPayload {
+  userId: string;
+  email: string;
+  iat: number; // Issued at
+  exp: number; // Expires at
+}
+```
+
+**Access Token**: Expires in 15 minutes  
+**Refresh Token**: Expires in 30 days
 
 ---
 
-## Security Considerations
+## Security Notes
 
-1. **Password Requirements**: Minimum 8 characters (enforced server-side)
-2. **Rate Limiting**: Max 5 login attempts per 15 minutes per IP
-3. **Token Storage**: Use SecureStore on mobile (never AsyncStorage)
-4. **HTTPS Only**: All auth endpoints require HTTPS in production
-5. **CORS**: Mobile app origin must be whitelisted
+1. **Password Requirements**:
+   - Minimum 8 characters
+   - At least one uppercase letter
+   - At least one number
+   - At least one special character
+
+2. **Rate Limiting**:
+   - Login: 10 attempts per 15 minutes per IP
+   - Register: 5 attempts per hour per IP
+   - Password reset: 3 requests per hour per email
+
+3. **Token Storage** (Mobile):
+   - Access token: In-memory only (lost on app close)
+   - Refresh token: SecureStore (encrypted)
+
+4. **Token Rotation**:
+   - Refresh tokens are rotated on each refresh request
+   - Old refresh token is invalidated immediately
+
+5. **HTTPS Only**:
+   - All endpoints must be accessed over HTTPS in production
+
+---
+
+## Error Codes Summary
+
+| Code | HTTP Status | Description |
+|------|-------------|-------------|
+| `INVALID_CREDENTIALS` | 401 | Email/password mismatch |
+| `EMAIL_NOT_VERIFIED` | 403 | User must verify email first |
+| `EMAIL_EXISTS` | 409 | Email already registered |
+| `VALIDATION_ERROR` | 400 | Invalid request data |
+| `INVALID_TOKEN` | 401 | Google OAuth token invalid |
+| `INVALID_REFRESH_TOKEN` | 401 | Refresh token invalid/expired |
+| `INVALID_VERIFICATION_TOKEN` | 400 | Email verification token invalid |
+| `RATE_LIMIT_EXCEEDED` | 429 | Too many requests |
+
+---
+
+## Testing Scenarios
+
+1. **Happy Path**: Register → Verify email → Login → Use access token → Refresh → Logout
+2. **Invalid Credentials**: Login with wrong password
+3. **Token Expiry**: Wait 15 minutes, access token expires, auto-refresh
+4. **Multiple Devices**: Login on two devices, logout from one doesn't affect other
+5. **Rate Limiting**: Attempt 11 logins in 15 minutes, expect 429 on 11th
+
+---
+
+## Implementation Notes (Backend)
+
+**File**: `ppgeil/pages/api/auth/mobile/*.ts`
+
+```typescript
+// /api/auth/mobile/login.ts
+export default async function handler(req, res) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  
+  const { email, password } = req.body;
+  
+  // 1. Find user
+  const user = await User.findOne({ email });
+  if (!user) return res.status(401).json({ error: { code: 'INVALID_CREDENTIALS', message: '...' } });
+  
+  // 2. Verify password
+  const isValid = await bcrypt.compare(password, user.password);
+  if (!isValid) return res.status(401).json({ error: { code: 'INVALID_CREDENTIALS', message: '...' } });
+  
+  // 3. Check email verified
+  if (!user.emailVerified) return res.status(403).json({ error: { code: 'EMAIL_NOT_VERIFIED', message: '...' } });
+  
+  // 4. Generate tokens
+  const accessToken = jwt.sign({ userId: user._id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '15m' });
+  const refreshToken = jwt.sign({ userId: user._id }, process.env.JWT_REFRESH_SECRET, { expiresIn: '30d' });
+  
+  // 5. Store refresh token
+  user.refreshTokens.push({ token: refreshToken, expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) });
+  await user.save();
+  
+  // 6. Return response
+  res.status(200).json({
+    success: true,
+    data: {
+      accessToken,
+      refreshToken,
+      user: { /* user data */ }
+    }
+  });
+}
+```
+
+---
+
+## Next Steps
+
+✅ **Auth API contract complete**  
+→ **Implement backend endpoints** (`ppgeil/pages/api/auth/mobile/`)  
+→ **Implement mobile auth service** (`react-native/src/services/api/auth.ts`)  
+→ **Setup Axios interceptor** for auto-refresh

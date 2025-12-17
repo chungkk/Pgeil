@@ -1,0 +1,20 @@
+{
+  "welcome": "Chào mừng",
+  "login": "Đăng nhập",
+  "register": "Đăng ký",
+  "email": "Email",
+  "password": "Mật khẩu",
+  "forgotPassword": "Quên mật khẩu?",
+  "home": "Trang chủ",
+  "profile": "Hồ sơ",
+  "lessons": "Bài học",
+  "shadowing": "Luyện nói",
+  "dictation": "Chính tả",
+  "dictionary": "Từ điển",
+  "leaderboard": "Bảng xếp hạng",
+  "settings": "Cài đặt",
+  "logout": "Đăng xuất",
+  "loading": "Đang tải...",
+  "error": "Lỗi",
+  "success": "Thành công"
+}

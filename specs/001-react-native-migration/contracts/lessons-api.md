@@ -1,309 +1,433 @@
-# Lessons API
+# Lessons API Contract
 
-Handles lesson browsing, filtering, and details.
+**Version**: 1.0  
+**Base URL**: `/api/lessons`  
+**Authentication**: Bearer token required
+
+---
 
 ## Endpoints
 
-### GET /api/lessons
+### 1. List Lessons
 
-List lessons with optional filtering and pagination.
+**GET** `/api/lessons`
 
-**Authentication**: Optional (returns user-specific data if authenticated)
+Get paginated list of lessons with optional filters.
 
-**Query Parameters**:
-- `category` (string, optional): Filter by category slug
-- `difficulty` (string, optional): Filter by difficulty ('beginner' | 'intermediate' | 'advanced')
-- `search` (string, optional): Search in title/description
-- `page` (number, optional): Page number (default: 1)
-- `limit` (number, optional): Results per page (default: 20, max: 100)
+#### Query Parameters
 
-**Example Request**:
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `page` | number | No | Page number (default: 1) |
+| `limit` | number | No | Items per page (default: 20, max: 100) |
+| `difficulty` | string | No | Filter by: "Beginner", "Intermediate", "Advanced" |
+| `category` | string | No | Filter by category |
+| `search` | string | No | Search in title/description |
+| `sort` | string | No | Sort by: "newest", "popular", "difficulty" (default: "newest") |
+
+#### Request
+
+```http
+GET /api/lessons?page=1&limit=20&difficulty=Beginner&sort=popular
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
-GET /api/lessons?category=daily-conversations&difficulty=beginner&page=1&limit=10
-```
 
-**Response 200**:
-```json
+#### Response (Success)
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+
 {
-  "lessons": [
+  "success": true,
+  "data": [
     {
-      "id": "lesson_123",
-      "title": "At the Bakery",
-      "description": "Learn how to order bread and pastries in German",
-      "difficulty": "beginner",
-      "category": {
-        "id": "cat_1",
-        "name": "Daily Conversations",
-        "slug": "daily-conversations"
+      "id": "507f1f77bcf86cd799439011",
+      "title": "Greetings and Introductions",
+      "description": "Learn basic German greetings...",
+      "youtubeVideoId": "dQw4w9WgXcQ",
+      "thumbnailUrl": "https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg",
+      "difficultyLevel": "Beginner",
+      "category": "Daily Conversation",
+      "tags": ["greetings", "basic", "conversation"],
+      "duration": 300,
+      "viewCount": 1250,
+      "completionCount": 450,
+      "averageRating": 4.5,
+      "fileSize": {
+        "video": 45678910,
+        "audio": 5678910
       },
-      "categorySlug": "daily-conversations",
-      "audioUrl": "https://papageil.net/audio/lesson_123.m4a",
-      "videoUrl": "https://papageil.net/video/lesson_123.mp4",
-      "thumbnailUrl": "https://i.ytimg.com/vi/abc123/mqdefault.jpg",
-      "duration": 245,
-      "viewCount": 1502,
-      "createdAt": "2024-11-01T10:00:00Z",
-      "updatedAt": "2024-12-01T15:30:00Z",
+      "isDownloaded": false,
       "userProgress": {
-        "status": "in_progress",
-        "playbackPosition": 120,
-        "completionPercentage": 48
-      },
-      "isDownloaded": false
+        "completionPercentage": 0,
+        "isCompleted": false
+      }
     }
-    // ... more lessons
   ],
-  "total": 85,
-  "page": 1,
-  "limit": 10,
-  "totalPages": 9
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 150,
+    "totalPages": 8
+  }
 }
 ```
 
-**Response Fields**:
-- `userProgress`: Only present if user is authenticated and has started the lesson
-- `isDownloaded`: Only present if user is authenticated
-
-**Errors**:
-- `400 BAD_REQUEST`: Invalid query parameters
-
 ---
 
-### GET /api/lessons/[id]
+### 2. Get Lesson Details
 
-Get detailed information about a specific lesson.
+**GET** `/api/lessons/:id`
 
-**Authentication**: Optional (returns user-specific data if authenticated)
+Get full details for a specific lesson including transcript.
 
-**Path Parameters**:
-- `id` (string): Lesson ID
+#### Request
 
-**Example Request**:
+```http
+GET /api/lessons/507f1f77bcf86cd799439011
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
-GET /api/lessons/lesson_123
-```
 
-**Response 200**:
-```json
+#### Response (Success)
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+
 {
-  "lesson": {
-    "id": "lesson_123",
-    "title": "At the Bakery",
-    "description": "Learn how to order bread and pastries in German. This lesson covers common phrases used in a bakery, including asking for specific items, quantities, and prices.",
-    "difficulty": "beginner",
-    "category": {
-      "id": "cat_1",
-      "name": "Daily Conversations",
-      "slug": "daily-conversations",
-      "color": "#4CAF50"
+  "success": true,
+  "data": {
+    "id": "507f1f77bcf86cd799439011",
+    "title": "Greetings and Introductions",
+    "description": "Learn basic German greetings and how to introduce yourself...",
+    "youtubeVideoId": "dQw4w9WgXcQ",
+    "thumbnailUrl": "https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg",
+    "difficultyLevel": "Beginner",
+    "category": "Daily Conversation",
+    "tags": ["greetings", "basic"],
+    "duration": 300,
+    "transcript": {
+      "id": "507f1f77bcf86cd799439012",
+      "segments": [
+        {
+          "id": "seg_001",
+          "startTime": 0,
+          "endTime": 5.2,
+          "textGerman": "Guten Morgen!",
+          "textVietnamese": "Chào buổi sáng!",
+          "textEnglish": "Good morning!",
+          "words": [
+            {
+              "word": "guten",
+              "startTime": 0,
+              "endTime": 1.5,
+              "partOfSpeech": "adjective"
+            },
+            {
+              "word": "morgen",
+              "startTime": 1.5,
+              "endTime": 2.8,
+              "partOfSpeech": "noun"
+            }
+          ]
+        }
+      ]
     },
-    "categorySlug": "daily-conversations",
-    "audioUrl": "https://papageil.net/audio/lesson_123.m4a",
-    "videoUrl": "https://papageil.net/video/lesson_123.mp4",
-    "thumbnailUrl": "https://i.ytimg.com/vi/abc123/mqdefault.jpg",
-    "duration": 245,
-    "viewCount": 1503,
-    "transcript": [
+    "dictationExercises": [
       {
-        "id": "seg_1",
-        "text": "Guten Morgen! Was möchten Sie?",
-        "translation": "Good morning! What would you like?",
-        "startTime": 0,
-        "endTime": 3.5
-      },
-      {
-        "id": "seg_2",
-        "text": "Ich hätte gerne zwei Brötchen, bitte.",
-        "translation": "I would like two rolls, please.",
-        "startTime": 3.5,
-        "endTime": 7.2
+        "id": "dict_001",
+        "type": "fill-in-blank",
+        "prompt": "seg_001",
+        "correctAnswer": "Guten Morgen",
+        "hints": ["Greeting", "Morning"],
+        "difficulty": "easy"
       }
-      // ... more segments
     ],
     "userProgress": {
-      "id": "prog_456",
-      "status": "in_progress",
-      "playbackPosition": 120,
-      "completionPercentage": 48,
-      "pointsEarned": 0,
-      "attemptsCount": 2,
-      "startedAt": "2024-12-14T09:00:00Z",
-      "lastAccessedAt": "2024-12-15T14:30:00Z"
-    },
-    "isDownloaded": false,
-    "createdAt": "2024-11-01T10:00:00Z",
-    "updatedAt": "2024-12-01T15:30:00Z"
+      "completionPercentage": 45,
+      "timeSpent": 450,
+      "lastWatchedPosition": 135,
+      "isCompleted": false,
+      "shadowingAttempts": 3,
+      "shadowingAverageScore": 75,
+      "dictationAttempts": 2,
+      "dictationAverageAccuracy": 80
+    }
+  }
+}
+```
+
+---
+
+### 3. Get Stream URLs
+
+**GET** `/api/lessons/:id/stream`
+
+Get temporary signed URLs for online video/audio streaming.
+
+#### Request
+
+```http
+GET /api/lessons/507f1f77bcf86cd799439011/stream
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+#### Response (Success)
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "success": true,
+  "data": {
+    "videoUrl": "https://backend.com/stream/video/abc123def456?expires=1702890000&signature=xyz789",
+    "audioUrl": "https://backend.com/stream/audio/abc123def456?expires=1702890000&signature=xyz789",
+    "expiresAt": "2024-12-17T12:00:00Z",
+    "duration": 300
+  }
+}
+```
+
+#### Response (Error - YouTube Unavailable)
+
+```http
+HTTP/1.1 503 Service Unavailable
+Content-Type: application/json
+
+{
+  "success": false,
+  "error": {
+    "code": "YOUTUBE_UNAVAILABLE",
+    "message": "YouTube video is not available. It may have been removed or is restricted."
+  }
+}
+```
+
+---
+
+### 4. Prepare Download
+
+**POST** `/api/lessons/:id/download`
+
+Prepare lesson for offline download (backend caches YouTube content).
+
+#### Request
+
+```http
+POST /api/lessons/507f1f77bcf86cd799439011/download
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+#### Response (Success)
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "success": true,
+  "data": {
+    "videoUrl": "https://backend.com/downloads/507f1f77bcf86cd799439011-video.mp4",
+    "audioUrl": "https://backend.com/downloads/507f1f77bcf86cd799439011-audio.m4a",
+    "transcriptUrl": "https://backend.com/downloads/507f1f77bcf86cd799439011-transcript.json",
+    "totalSize": 51357820,
+    "expiresAt": "2024-12-18T12:00:00Z"
   },
-  "relatedLessons": [
-    {
-      "id": "lesson_124",
-      "title": "At the Supermarket",
-      "difficulty": "beginner",
-      "thumbnailUrl": "https://...",
-      "duration": 312
-    }
-    // ... up to 4 related lessons
-  ]
+  "message": "Lesson prepared for download"
 }
 ```
 
-**Errors**:
-- `404 NOT_FOUND`: Lesson not found
+#### Response (Error - Download Limit)
 
----
+```http
+HTTP/1.1 403 Forbidden
+Content-Type: application/json
 
-### POST /api/lessons/[id]/view
-
-Increment view count for a lesson.
-
-**Authentication**: Optional
-
-**Path Parameters**:
-- `id` (string): Lesson ID
-
-**Request Body**: None
-
-**Response 200**:
-```json
 {
-  "viewCount": 1504
-}
-```
-
-**Errors**:
-- `404 NOT_FOUND`: Lesson not found
-
-**Rate Limiting**: Max 1 request per lesson per user per hour (tracked by IP if not authenticated)
-
----
-
-### GET /api/article-categories
-
-List all lesson categories.
-
-**Authentication**: Optional
-
-**Query Parameters**:
-- `activeOnly` (boolean, optional): Only return active categories (default: false)
-
-**Example Request**:
-```
-GET /api/article-categories?activeOnly=true
-```
-
-**Response 200**:
-```json
-{
-  "categories": [
-    {
-      "id": "cat_1",
-      "name": "Daily Conversations",
-      "slug": "daily-conversations",
-      "description": "Common phrases for everyday situations",
-      "iconName": "chat",
-      "color": "#4CAF50",
-      "order": 1,
-      "lessonCount": 28,
-      "isActive": true,
-      "createdAt": "2024-10-01T10:00:00Z",
-      "updatedAt": "2024-12-01T10:00:00Z"
-    },
-    {
-      "id": "cat_2",
-      "name": "Business German",
-      "slug": "business-german",
-      "description": "Professional language for work settings",
-      "iconName": "briefcase",
-      "color": "#2196F3",
-      "order": 2,
-      "lessonCount": 15,
-      "isActive": true,
-      "createdAt": "2024-10-01T10:00:00Z",
-      "updatedAt": "2024-12-01T10:00:00Z"
+  "success": false,
+  "error": {
+    "code": "DOWNLOAD_LIMIT_EXCEEDED",
+    "message": "You have reached the maximum of 10 downloaded lessons. Please delete an existing download first.",
+    "details": {
+      "currentDownloads": 10,
+      "maxDownloads": 10
     }
-    // ... more categories
-  ]
+  }
 }
 ```
 
 ---
 
-## Filtering Logic
+### 5. Update Progress
 
-### Difficulty Levels
+**PATCH** `/api/lessons/:id/progress`
 
+Update user progress for a lesson.
+
+#### Request
+
+```http
+PATCH /api/lessons/507f1f77bcf86cd799439011/progress
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+Content-Type: application/json
+
+{
+  "completionPercentage": 50,
+  "timeSpent": 150,
+  "lastWatchedPosition": 150,
+  "shadowingScore": 85,
+  "dictationAccuracy": 90
+}
 ```
-beginner: A1-A2 CEFR levels
-intermediate: B1-B2 CEFR levels
-advanced: C1-C2 CEFR levels
+
+#### Response (Success)
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "success": true,
+  "data": {
+    "id": "progress_123",
+    "completionPercentage": 50,
+    "timeSpent": 600,
+    "isCompleted": false,
+    "shadowingAverageScore": 80,
+    "dictationAverageAccuracy": 85
+  },
+  "message": "Progress updated successfully"
+}
 ```
 
-### Search Algorithm
+---
 
-When `search` parameter is provided, API searches in:
-1. Lesson title (weighted 3x)
-2. Lesson description (weighted 2x)
-3. Category name (weighted 1x)
+### 6. Mark Lesson Complete
 
-Returns results sorted by relevance score.
+**POST** `/api/lessons/:id/complete`
+
+Mark a lesson as completed.
+
+#### Request
+
+```http
+POST /api/lessons/507f1f77bcf86cd799439011/complete
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+#### Response (Success)
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "success": true,
+  "data": {
+    "completionPercentage": 100,
+    "isCompleted": true,
+    "completedAt": "2024-12-17T10:30:00Z",
+    "earnedPoints": 100,
+    "newAchievements": [
+      {
+        "id": "ach_001",
+        "badgeName": "First Lesson Complete",
+        "pointsAwarded": 50
+      }
+    ]
+  },
+  "message": "Lesson completed! You earned 100 points."
+}
+```
 
 ---
 
-## Caching Recommendations
+## Data Models
 
-**Mobile App Should Cache**:
-- Lesson lists: 5 minutes
-- Lesson details: 1 hour
-- Categories: 1 day
-
-**Cache Invalidation**:
-- On user action (complete lesson, start new lesson)
-- On manual refresh (pull-to-refresh)
-
----
-
-## Performance Considerations
-
-1. **Pagination**: Always use pagination to avoid loading 100+ lessons at once
-2. **Lazy Loading**: Load transcript only when lesson detail is opened
-3. **Image Optimization**: Thumbnail URLs support size parameters: `?size=small|medium|large`
-4. **Prefetching**: Consider prefetching next page when user scrolls to 80% of current page
-
----
-
-## Example Mobile Implementation
+### Lesson (List Item)
 
 ```typescript
-// src/hooks/useLessons.ts
-import useSWR from 'swr';
-import api from '@/services/api';
-
-export function useLessons(
-  categorySlug?: string,
-  difficulty?: string,
-  page: number = 1
-) {
-  const params = new URLSearchParams();
-  if (categorySlug) params.append('category', categorySlug);
-  if (difficulty) params.append('difficulty', difficulty);
-  params.append('page', page.toString());
-  params.append('limit', '20');
-
-  const { data, error, mutate } = useSWR(
-    `/lessons?${params.toString()}`,
-    (url) => api.get(url).then((res) => res.data),
-    {
-      revalidateOnFocus: false,
-      dedupingInterval: 60000, // 1 minute
-    }
-  );
-
-  return {
-    lessons: data?.lessons || [],
-    total: data?.total || 0,
-    isLoading: !error && !data,
-    isError: error,
-    refresh: mutate,
+interface LessonListItem {
+  id: string;
+  title: string;
+  description: string;
+  youtubeVideoId: string;
+  thumbnailUrl: string;
+  difficultyLevel: 'Beginner' | 'Intermediate' | 'Advanced';
+  category: string;
+  tags: string[];
+  duration: number; // seconds
+  viewCount: number;
+  completionCount: number;
+  averageRating: number;
+  fileSize?: {
+    video: number;
+    audio: number;
+  };
+  isDownloaded: boolean;
+  userProgress?: {
+    completionPercentage: number;
+    isCompleted: boolean;
   };
 }
 ```
+
+### Lesson (Full Detail)
+
+Extends `LessonListItem` with:
+- `transcript`: Full transcript with segments
+- `dictationExercises`: Array of exercises
+- `userProgress`: Detailed progress object
+
+---
+
+## Business Rules
+
+1. **Download Limit**: Max 10 lessons per user (spec FR-028)
+2. **Stream Expiry**: Signed URLs expire after 1 hour
+3. **Download Cache**: Backend caches expire after 24 hours
+4. **Progress Auto-save**: Mobile app should auto-save every 30 seconds
+5. **Completion Criteria**: Lesson marked complete when user watches 90%+ OR manually completes
+
+---
+
+## Error Codes
+
+| Code | HTTP Status | Description |
+|------|-------------|-------------|
+| `LESSON_NOT_FOUND` | 404 | Lesson ID doesn't exist |
+| `YOUTUBE_UNAVAILABLE` | 503 | YouTube video unavailable |
+| `DOWNLOAD_LIMIT_EXCEEDED` | 403 | User reached 10-lesson limit |
+| `INVALID_PROGRESS_DATA` | 400 | Progress update validation failed |
+
+---
+
+## Implementation Notes
+
+**Backend YouTube Extraction** (`ppgeil/lib/youtube.js`):
+```javascript
+import ytdl from '@distube/ytdl-core';
+
+export async function getStreamUrls(youtubeVideoId) {
+  const info = await ytdl.getInfo(youtubeVideoId);
+  const videoFormat = ytdl.chooseFormat(info.formats, { quality: 'highestvideo' });
+  const audioFormat = ytdl.chooseFormat(info.formats, { quality: 'highestaudio' });
+  
+  // Sign URLs with JWT (expire in 1 hour)
+  const videoUrl = signUrl(videoFormat.url, 3600);
+  const audioUrl = signUrl(audioFormat.url, 3600);
+  
+  return { videoUrl, audioUrl, duration: info.videoDetails.lengthSeconds };
+}
+```
+
+---
+
+## Next Steps
+
+✅ **Lessons API contract complete**  
+→ **Implement backend endpoints**  
+→ **Implement mobile lessons service**  
+→ **Test online streaming and offline download flows**

@@ -1,40 +1,94 @@
-# Implementation Plan: Native Mobile App for German Language Learning
+# Implementation Plan: Native iOS German Learning App (React Native Migration)
 
-**Branch**: `001-react-native-migration` | **Date**: 2024-12-16 | **Spec**: [spec.md](./spec.md)
+**Branch**: `001-react-native-migration` | **Date**: 2024-12-17 | **Spec**: [spec.md](./spec.md)
 **Input**: Feature specification from `/specs/001-react-native-migration/spec.md`
 
 **Note**: This template is filled in by the `/speckit.plan` command. See `.specify/templates/commands/plan.md` for the execution workflow.
 
 ## Summary
 
-This plan implements a native iOS mobile application for German language learning that delivers shadowing, dictation, and vocabulary practice experiences. The app will be built as a standalone mobile client that consumes the existing Next.js backend API (preserving all 72 API routes). Primary features include lesson browsing, audio playback with synchronized transcripts, dictation mode with real-time feedback, vocabulary lookup, progress tracking with gamification, offline lesson downloads, and multi-language support.
+Migrate the existing Next.js + Capacitor iOS German learning app ("PapaGeil") to a native React Native iOS application while maintaining the existing Next.js backend API. The app enables German language learners to practice speaking through video shadowing, improve writing through dictation exercises, and access an integrated dictionary. Core features include YouTube-based video lessons, pronunciation feedback (>80% threshold), offline downloads (max 10 lessons), and gamification elements (leaderboards, achievements). The migration prioritizes native mobile UX, offline-first architecture, and optimized audio/video playback while preserving all user data and backend infrastructure.
 
 ## Technical Context
 
-**Language/Version**: NEEDS CLARIFICATION - JavaScript/TypeScript (React Native) or Swift (native iOS)  
-**Primary Dependencies**: NEEDS CLARIFICATION - Framework choice (Expo vs Bare React Native vs Swift UIKit)  
-**Storage**: AsyncStorage for preferences, SQLite or Realm for offline data, SecureStore for tokens  
-**Testing**: NEEDS CLARIFICATION - Jest + React Native Testing Library or XCTest  
-**Target Platform**: iOS 14+ (iPhone and iPad)  
-**Project Type**: Mobile (iOS native or cross-platform)  
-**Performance Goals**: <3s app launch, <2s lesson load, <100ms audio latency, 60 FPS UI  
-**Constraints**: <80MB app size, <50MB/hour data usage, offline-capable, 99.5% crash-free rate  
-**Scale/Scope**: ~16 main screens, 60+ components, consuming 72 existing API endpoints
+### Mobile App (React Native)
+
+**Language/Version**: JavaScript/TypeScript (ES2020+), React Native 0.73+
+**Primary Dependencies**: 
+  - Core: React 18+, React Navigation 6+
+  - Audio/Video: react-native-video, react-native-track-player (NEEDS CLARIFICATION: or expo-av)
+  - Storage: @react-native-async-storage/async-storage, react-native-secure-storage
+  - Speech: @react-native-voice/voice
+  - YouTube: NEEDS CLARIFICATION (react-native-youtube-iframe vs custom WebView vs backend streaming)
+  - Network: axios, @react-native-community/netinfo
+  - UI: react-native-vector-icons, react-native-gesture-handler, react-native-reanimated
+  - i18n: react-i18next (existing)
+**Storage**: AsyncStorage for app state/cache, SecureStore for tokens, local file system for downloaded content
+**Testing**: Jest for unit tests, React Native Testing Library, NEEDS CLARIFICATION (Detox vs Appium for E2E)
+**Target Platform**: iOS 13+ (iPhone X onwards per spec SC-011)
+**Project Type**: Mobile app with separate backend API
+**Performance Goals**: 
+  - App startup <3s (cold start)
+  - Screen transitions <300ms
+  - Audio playback latency <100ms
+  - Dictionary lookup <1s (cached) / <3s (API)
+  - 60 FPS UI animations
+**Constraints**: 
+  - Offline-capable (10 lessons max download)
+  - Battery drain <5% per hour active use
+  - App size target <100MB
+  - Crash-free rate >99%
+  - Pronunciation feedback <3s
+**Scale/Scope**: 
+  - ~16 core screens (migrated from Next.js pages)
+  - ~60 components to migrate/rewrite
+  - Support 10k+ concurrent users (backend handles this)
+  - Lesson catalog: hundreds of videos
+
+### Backend API (Existing - Keep)
+
+**Language/Version**: JavaScript/TypeScript, Node.js 20+, Next.js 15
+**Primary Dependencies**: 
+  - Framework: Next.js 15 (API routes)
+  - Database: MongoDB 6+, Mongoose 8+
+  - Auth: NextAuth 4 (custom token flow for mobile)
+  - YouTube: @distube/ytdl-core, youtubei.js
+  - AI: OpenAI API (pronunciation scoring)
+  - Utils: bcryptjs, jsonwebtoken, node-cron
+**Storage**: MongoDB Atlas (existing)
+**Testing**: NEEDS CLARIFICATION (existing test setup)
+**Target Platform**: Node.js server (Vercel/Railway deployment)
+**Project Type**: API server (72 existing API routes to maintain)
+**Performance Goals**: API response time <200ms p95
+**Constraints**: 
+  - Must maintain backward compatibility with existing data
+  - Zero downtime migration (mobile and web can coexist)
+**Scale/Scope**: 72 API endpoints, existing user base preserved
 
 ## Constitution Check
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-**Constitution Status**: No project-specific constitution defined yet (`.specify/memory/constitution.md` contains template only)
+**Status**: ⚠️ No project-specific constitution found (`.specify/memory/constitution.md` contains template only)
 
-**Assumed Best Practices**:
-- ✅ Test-driven development for critical user flows
-- ✅ Modular architecture with clear separation of concerns
-- ✅ API contracts documented and versioned
-- ✅ Performance benchmarks defined in success criteria
-- ✅ Accessibility support (VoiceOver, Dynamic Type)
+**Default Principles Applied**:
+- ✅ **Separation of Concerns**: Mobile app and backend API are cleanly separated
+- ✅ **Data Integrity**: Existing MongoDB data preserved, zero-downtime migration
+- ✅ **Testing**: Unit, integration, and E2E testing frameworks identified (Jest, React Native Testing Library, Detox/Appium)
+- ✅ **Performance**: Explicit performance targets defined (startup time, screen transitions, API latency)
+- ✅ **Security**: Secure token storage (SecureStore), authentication via existing JWT infrastructure
+- ⚠️ **Code Reusability**: Migration will create new mobile codebase; opportunity to create shared business logic libraries
+- ⚠️ **Documentation**: Implementation plan, data model, and API contracts will be generated
 
-**No violations detected** - proceeding with standard mobile development practices.
+**Recommendations**:
+1. Consider creating a project-specific constitution to codify:
+   - Mobile-specific principles (offline-first, battery efficiency, native UX patterns)
+   - Backend API stability guarantees (versioning, deprecation policy)
+   - Cross-platform considerations (if Android support planned)
+2. Establish testing gates before merging to main branch
+3. Define performance regression thresholds and monitoring strategy
+
+**Gate Result**: ✅ **PASS** - Proceeding with Phase 0 Research
 
 ## Project Structure
 
@@ -52,146 +106,123 @@ specs/[###-feature]/
 
 ### Source Code (repository root)
 
-**Selected Structure**: Mobile + Existing API (Option 3)
-
 ```text
-# Backend API (EXISTING - No changes)
-pages/api/                          # 72 Next.js API routes (preserved)
-├── lessons.js                      # Lesson CRUD
-├── auth/                           # Authentication endpoints
-├── user/                           # User profile, points, stats
-├── leaderboard/                    # Rankings, achievements
-├── dictionary.js                   # Vocabulary lookup
-└── ...                             # Additional 67 endpoints
-
-# NEW: React Native Mobile App
-react-native-german-app/            # New directory at repo root
+# React Native iOS App (New)
+react-native/
 ├── src/
-│   ├── navigation/                 # React Navigation setup
-│   │   ├── AppNavigator.tsx        # Root navigator
-│   │   ├── AuthStack.tsx           # Login/register flow
-│   │   ├── MainTabs.tsx            # Bottom tabs
-│   │   └── LessonStack.tsx         # Lesson screens
-│   ├── screens/                    # Screen components
-│   │   ├── Home/                   # Lesson browsing (P1)
-│   │   ├── Lesson/                 # Shadowing mode (P1)
-│   │   ├── Dictation/              # Dictation practice (P2)
-│   │   ├── Profile/                # User stats (P3)
-│   │   └── Auth/                   # Login/register (P3)
-│   ├── components/                 # Reusable UI components
-│   │   ├── atoms/                  # Button, Input, Card
-│   │   ├── molecules/              # LessonCard, SearchBar
-│   │   └── organisms/              # Header, DictionaryModal
-│   ├── services/                   # Business logic
-│   │   ├── api.ts                  # API client (axios)
-│   │   ├── auth.ts                 # Authentication
-│   │   ├── audio.ts                # Audio playback
-│   │   └── storage.ts              # Local storage
-│   ├── context/                    # React Context
-│   │   ├── AuthContext.tsx         # User session
-│   │   ├── ThemeContext.tsx        # Dark/light mode
-│   │   └── LanguageContext.tsx     # i18n
-│   ├── hooks/                      # Custom hooks
+│   ├── navigation/              # React Navigation setup
+│   │   ├── AppNavigator.tsx     # Root navigator
+│   │   ├── AuthStack.tsx        # Auth flow (login/register)
+│   │   ├── MainTabs.tsx         # Bottom tabs (Home, Daily, Profile)
+│   │   └── LessonStack.tsx      # Lesson detail screens
+│   ├── screens/                 # All app screens
+│   │   ├── Auth/                # Login, Register, ForgotPassword
+│   │   ├── Home/                # Lesson list, filters, search
+│   │   ├── Lesson/              # Lesson detail, video player, shadowing
+│   │   ├── Dictation/           # Dictation exercises
+│   │   ├── Dictionary/          # Dictionary popup, vocabulary list
+│   │   ├── Profile/             # User profile, settings, stats
+│   │   └── Leaderboard/         # Rankings, achievements
+│   ├── components/              # Reusable components
+│   │   ├── atoms/               # Button, Input, Card, Avatar
+│   │   ├── molecules/           # SearchBar, LessonCard, StatCard
+│   │   └── organisms/           # Header, DictionaryModal, AudioPlayer
+│   ├── services/                # API, storage, utils
+│   │   ├── api/                 # API client, endpoints
+│   │   │   ├── client.ts        # Axios config with auth interceptors
+│   │   │   ├── auth.ts          # Login, register, token refresh
+│   │   │   ├── lessons.ts       # Lesson CRUD, progress
+│   │   │   ├── dictionary.ts    # Word lookup
+│   │   │   └── leaderboard.ts   # Rankings, achievements
+│   │   ├── storage/             # Local storage
+│   │   │   ├── asyncStorage.ts  # App state, cache
+│   │   │   ├── secureStorage.ts # Tokens
+│   │   │   └── fileSystem.ts    # Downloaded lessons
+│   │   ├── audio/               # Audio/video playback
+│   │   │   ├── player.ts        # react-native-track-player setup
+│   │   │   └── recorder.ts      # Voice recording
+│   │   └── youtube/             # YouTube integration
+│   │       └── extractor.ts     # Extract streams for offline
+│   ├── context/                 # React Context
+│   │   ├── AuthContext.tsx      # User auth state
+│   │   ├── ThemeContext.tsx     # Dark/light mode
+│   │   ├── LanguageContext.tsx  # i18n
+│   │   └── OfflineContext.tsx   # Offline sync state
+│   ├── hooks/                   # Custom hooks
 │   │   ├── useAuth.ts
 │   │   ├── useLessons.ts
-│   │   └── useAudioPlayer.ts
-│   ├── types/                      # TypeScript types
-│   │   ├── Lesson.ts
-│   │   ├── User.ts
-│   │   └── api.ts
-│   ├── utils/                      # Helpers
+│   │   ├── useAudioPlayer.ts
+│   │   ├── useDictionary.ts
+│   │   └── useOfflineSync.ts
+│   ├── utils/                   # Helpers
 │   │   ├── constants.ts
-│   │   └── validation.ts
-│   └── styles/                     # Global styles
-│       ├── colors.ts
-│       ├── typography.ts
-│       └── spacing.ts
-├── assets/                         # Images, fonts
-├── ios/                            # iOS native code
-├── android/                        # Android native code (future)
-├── __tests__/                      # Tests
+│   │   ├── validators.ts
+│   │   └── formatters.ts
+│   ├── styles/                  # Global styles
+│   │   ├── colors.ts
+│   │   ├── typography.ts
+│   │   ├── spacing.ts
+│   │   └── theme.ts
+│   ├── assets/                  # Images, fonts, i18n
+│   │   ├── images/
+│   │   ├── fonts/
+│   │   └── locales/
+│   │       ├── de.json
+│   │       ├── vi.json
+│   │       └── en.json
+│   ├── types/                   # TypeScript definitions
+│   │   ├── api.ts
+│   │   ├── models.ts
+│   │   └── navigation.ts
+│   └── App.tsx                  # Root component
+├── ios/                         # iOS native code
+│   ├── Podfile
+│   └── PapaGeil/                # Xcode project
+├── __tests__/                   # Tests
 │   ├── unit/
 │   ├── integration/
 │   └── e2e/
-├── app.json                        # Expo config
+├── .env.example
 ├── package.json
-└── tsconfig.json
+├── tsconfig.json
+├── metro.config.js
+└── README.md
+
+# Next.js Backend API (Existing - Minimal Changes)
+ppgeil/                          # Current Next.js app directory
+├── pages/
+│   └── api/                     # 72 API routes (keep all)
+│       ├── auth/                # Authentication endpoints
+│       ├── lessons/             # Lesson CRUD
+│       ├── progress/            # User progress tracking
+│       ├── dictionary/          # Word lookup
+│       ├── pronunciation/       # OpenAI scoring
+│       ├── leaderboard/         # Rankings
+│       └── ...                  # Other existing routes
+├── lib/                         # Shared utilities
+│   ├── mongodb.js               # DB connection
+│   ├── auth.js                  # JWT helpers
+│   └── youtube.js               # YouTube utilities
+├── models/                      # Mongoose schemas
+│   ├── User.js
+│   ├── Lesson.js
+│   ├── Progress.js
+│   ├── Recording.js
+│   └── ...
+└── scripts/                     # Cron jobs
+    ├── cleanup-recordings.js    # Delete recordings >30 days
+    └── cleanup-files.js
 ```
 
-**Structure Decision**: This follows the standard React Native architecture with Expo. The mobile app is completely separate from the existing Next.js web app but shares the same backend API. No modifications to existing web code required.
+**Structure Decision**: **Mobile + API** architecture selected. 
+
+- **New React Native app** in `/react-native/` directory with feature-based organization (navigation, screens, services)
+- **Existing Next.js API** in `/ppgeil/` preserved with minimal modifications (add mobile-specific auth endpoints if needed)
+- Clean separation enables independent deployment and testing
+- Shared data models defined in backend, consumed via API by mobile app
 
 ## Complexity Tracking
 
 > **Fill ONLY if Constitution Check has violations that must be justified**
 
-**No violations detected** - N/A
-
----
-
-## Phase 0: Research ✅ COMPLETE
-
-All technical unknowns have been resolved. See [research.md](./research.md) for detailed analysis.
-
-### Key Decisions Made
-
-| Decision | Choice | Rationale |
-|----------|--------|-----------|
-| **Platform** | React Native with TypeScript | Team familiarity, code sharing, cross-platform potential |
-| **Framework** | Expo (Managed Workflow) | Rapid development, built-in features, can eject later |
-| **Navigation** | React Navigation 6.x | Industry standard, excellent TypeScript support |
-| **State** | React Context + SWR | Lightweight, sufficient complexity |
-| **Audio** | expo-av | Handles all requirements (speed, seek, background) |
-| **Storage** | AsyncStorage + SecureStore + FileSystem | Native, secure, covers all use cases |
-| **Testing** | Jest + React Native Testing Library + Detox | Standard stack, fast feedback |
-
----
-
-## Phase 1: Design ✅ COMPLETE
-
-Data models and API contracts have been defined. See documentation below.
-
-### Deliverables
-
-- ✅ [data-model.md](./data-model.md) - 7 core entities with TypeScript types
-- ✅ [quickstart.md](./quickstart.md) - Development setup guide
-- ✅ [contracts/README.md](./contracts/README.md) - API contract overview
-- ✅ [contracts/auth-api.md](./contracts/auth-api.md) - Authentication endpoints
-- ✅ [contracts/lessons-api.md](./contracts/lessons-api.md) - Lesson browsing
-- ⏳ [contracts/progress-api.md](./contracts/progress-api.md) - **TODO**: User progress tracking
-- ⏳ [contracts/leaderboard-api.md](./contracts/leaderboard-api.md) - **TODO**: Rankings
-- ⏳ [contracts/dictionary-api.md](./contracts/dictionary-api.md) - **TODO**: Vocabulary lookup
-- ✅ Agent context updated (CLAUDE.md)
-
-**Note**: Remaining contract files (progress, leaderboard, dictionary) should follow the same pattern as auth and lessons APIs.
-
----
-
-## Phase 2: Implementation Tasks
-
-**Status**: ⏳ Pending - Use `/speckit.tasks` command to generate task breakdown
-
-The tasks command will create a detailed implementation plan broken down by:
-- User stories (P1 → P2 → P3)
-- Individual screens and components
-- Testing requirements
-- Deployment steps
-
----
-
-## Summary
-
-**Planning Status**: Phases 0-1 complete, ready for Phase 2 (task breakdown)
-
-**What's Done**:
-- ✅ All technical decisions made (React Native + Expo)
-- ✅ Data model defined (7 entities, 25+ TypeScript types)
-- ✅ Core API contracts documented (auth, lessons)
-- ✅ Development environment setup guide created
-- ✅ Agent context updated
-
-**What's Next**:
-1. Run `/speckit.tasks` to generate implementation tasks
-2. Follow quickstart.md to set up development environment
-3. Begin implementation starting with P1 user stories (browse lessons, audio shadowing)
-
-**Estimated Timeline** (from research.md): 3-4 months full-time development
+**Status**: N/A - No constitution violations detected. Architecture follows standard mobile + API separation pattern.

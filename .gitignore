@@ -1,0 +1,115 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnp
+.pnp.js
+
+# React Native
+react-native/ios/Pods/
+react-native/ios/build/
+react-native/android/.gradle/
+react-native/android/app/build/
+react-native/android/build/
+
+# iOS
+react-native/ios/Podfile.lock
+*.xcworkspace/
+!react-native/ios/*.xcworkspace/
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+xcuserdata/
+DerivedData/
+*.moved-aside
+*.xccheckout
+*.xcscmblueprint
+
+# Android
+react-native/android/.idea/
+react-native/android/local.properties
+*.iml
+*.apk
+*.ap_
+*.dex
+*.class
+.gradle/
+
+# Metro bundler
+react-native/.metro-health-check*
+.expo/
+.expo-shared/
+
+# Next.js
+ppgeil/.next/
+ppgeil/out/
+ppgeil/build/
+
+# TypeScript
+*.tsbuildinfo
+dist/
+build/
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Testing
+coverage/
+.nyc_output/
+*.lcov
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Temporary files
+*.tmp
+*.temp
+*.cache
+
+# Build outputs
+*.o
+*.so
+*.a
+*.exe
+*.dll
+
+# Secrets and keys
+*.pem
+*.key
+*.crt
+*.secret
+secrets/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Misc
+Thumbs.db
+.terraform/
+*.tfstate
+*.tfvars
