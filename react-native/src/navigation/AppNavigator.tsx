@@ -9,6 +9,8 @@ import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { RootStackParamList } from '@/types/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { AuthStack } from './AuthStack';
+import { MainTabs } from './MainTabs';
+import { LessonStack } from './LessonStack';
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -17,15 +19,6 @@ const LoadingScreen = () => (
   <View style={styles.loadingContainer}>
     <ActivityIndicator size="large" color="#4A90E2" />
     <Text style={styles.loadingText}>Loading...</Text>
-  </View>
-);
-
-// Placeholder for Main tabs (Phase 4)
-const MainPlaceholder = () => (
-  <View style={styles.container}>
-    <Text style={styles.text}>✅ Authentication Complete!</Text>
-    <Text style={styles.subtext}>Phase 3: Auth working</Text>
-    <Text style={styles.subtext}>Phase 4: Will implement Main tabs & Lesson screens</Text>
   </View>
 );
 
@@ -45,7 +38,18 @@ const AppNavigator: React.FC = () => {
       {!isAuthenticated ? (
         <Stack.Screen name="Auth" component={AuthStack} />
       ) : (
-        <Stack.Screen name="Main" component={MainPlaceholder} />
+        <>
+          <Stack.Screen
+            name="Main"
+            component={MainTabs}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="LessonStack"
+            component={LessonStack}
+            options={{ headerShown: false }}
+          />
+        </>
       )}
     </Stack.Navigator>
   );

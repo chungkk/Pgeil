@@ -37,7 +37,7 @@ export const SettingsScreen: React.FC = () => {
   };
 
   const handlePlaybackSpeedChange = async (speed: number) => {
-    setPlaybackSpeedState(speed);
+    setPlaybackSpeedState(speed as 0.5 | 0.75 | 1 | 1.25 | 1.5);
     updateUser({ playbackSpeed: speed as any });
     await asyncStorage.setItem(StorageKeys.PLAYBACK_SPEED, speed);
   };

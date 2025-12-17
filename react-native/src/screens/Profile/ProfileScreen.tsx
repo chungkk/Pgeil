@@ -10,7 +10,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { Card } from '@/components/atoms/Card';
 import { Button } from '@/components/atoms/Button';
 
-export const ProfileScreen: React.FC = () => {
+export const ProfileScreen: React.FC<any> = ({ navigation }) => {
   const { user, logout } = useAuth();
   const { theme } = useTheme();
   const { t } = useLanguage();
@@ -120,7 +120,10 @@ export const ProfileScreen: React.FC = () => {
 
       {/* Actions */}
       <Card style={styles.actionsCard}>
-        <TouchableOpacity style={styles.actionRow}>
+        <TouchableOpacity 
+          style={styles.actionRow}
+          onPress={() => navigation.navigate('Settings')}
+        >
           <Text style={[styles.actionText, { color: theme.colors.text }]}>
             {t('settings')}
           </Text>
@@ -129,7 +132,10 @@ export const ProfileScreen: React.FC = () => {
 
         <View style={[styles.actionDivider, { backgroundColor: theme.colors.divider }]} />
 
-        <TouchableOpacity style={styles.actionRow}>
+        <TouchableOpacity 
+          style={styles.actionRow}
+          onPress={() => navigation.navigate('VocabularyList')}
+        >
           <Text style={[styles.actionText, { color: theme.colors.text }]}>
             Vocabulary List
           </Text>
@@ -138,7 +144,10 @@ export const ProfileScreen: React.FC = () => {
 
         <View style={[styles.actionDivider, { backgroundColor: theme.colors.divider }]} />
 
-        <TouchableOpacity style={styles.actionRow}>
+        <TouchableOpacity 
+          style={styles.actionRow}
+          onPress={() => navigation.navigate('DownloadManager')}
+        >
           <Text style={[styles.actionText, { color: theme.colors.text }]}>
             Downloads
           </Text>
