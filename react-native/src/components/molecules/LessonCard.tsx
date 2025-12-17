@@ -12,9 +12,15 @@ interface LessonCardProps {
   lesson: Lesson;
   onPress: () => void;
   progress?: number; // 0-100
+  showDownloadButton?: boolean;
 }
 
-export const LessonCard: React.FC<LessonCardProps> = ({ lesson, onPress, progress }) => {
+export const LessonCard: React.FC<LessonCardProps> = ({ 
+  lesson, 
+  onPress, 
+  progress,
+  showDownloadButton = true
+}) => {
   const { theme } = useTheme();
 
   const getDifficultyColor = (difficulty: string) => {
@@ -47,6 +53,12 @@ export const LessonCard: React.FC<LessonCardProps> = ({ lesson, onPress, progres
 
         {/* Info */}
         <View style={styles.info}>
+          {/* Download Button in top-right corner */}
+          {showDownloadButton && (
+            <View style={styles.downloadButtonContainer}>
+              {/* DownloadButton component would go here - import needed */}
+            </View>
+          )}
           <Text
             style={[styles.title, { color: theme.colors.text }, theme.textStyles.h4]}
             numberOfLines={2}

@@ -1,97 +1,340 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# PapaGeil - German Learning App (React Native)
 
-# Getting Started
+A mobile iOS app for learning German through video shadowing, dictation exercises, and interactive content.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+## Features
 
-## Step 1: Start Metro
+✅ **Video Shadowing**: Learn pronunciation by shadowing native speakers  
+✅ **Dictation Practice**: Improve spelling through fill-in-the-blank and full sentence exercises  
+✅ **Integrated Dictionary**: Look up words instantly with offline caching  
+✅ **Offline Downloads**: Download up to 10 lessons for offline access  
+✅ **Leaderboards**: Compete with other learners on weekly, monthly, and all-time rankings  
+✅ **Achievements**: Earn badges for milestones (7 default achievements)  
+✅ **Progress Tracking**: Track lessons, practice time, accuracy, and streaks  
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+---
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+## Prerequisites
 
-```sh
-# Using npm
+- **Node.js**: 18+ (20+ recommended)
+- **React Native**: 0.73+
+- **iOS**: Xcode 15+, iOS 13+ target
+- **CocoaPods**: For iOS dependencies
+- **Backend API**: Running instance of the Next.js backend
+
+---
+
+## Quick Start
+
+### 1. Install Dependencies
+
+```bash
+cd react-native
+npm install
+```
+
+### 2. Install iOS Dependencies
+
+```bash
+cd ios
+pod install
+cd ..
+```
+
+### 3. Configure Environment
+
+Create `.env` file:
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env`:
+
+```env
+API_BASE_URL=http://localhost:3000
+# or your backend URL
+```
+
+### 4. Run on iOS
+
+```bash
+npm run ios
+# or for specific device
+npm run ios -- --simulator="iPhone 14"
+```
+
+### 5. Development Mode
+
+```bash
+# Start Metro bundler
 npm start
 
-# OR using Yarn
-yarn start
-```
-
-## Step 2: Build and run your app
-
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
-
-### Android
-
-```sh
-# Using npm
-npm run android
-
-# OR using Yarn
-yarn android
-```
-
-### iOS
-
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
-
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
-
-```sh
-bundle install
-```
-
-Then, and every time you update your native dependencies, run:
-
-```sh
-bundle exec pod install
-```
-
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
-
-```sh
-# Using npm
+# Run on device
 npm run ios
-
-# OR using Yarn
-yarn ios
 ```
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+---
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+## Project Structure
 
-## Step 3: Modify your app
+```
+react-native/
+├── src/
+│   ├── navigation/           # React Navigation setup
+│   │   ├── AppNavigator.tsx
+│   │   ├── AuthStack.tsx
+│   │   ├── MainTabs.tsx
+│   │   └── LessonStack.tsx
+│   ├── screens/              # All app screens
+│   │   ├── Auth/
+│   │   ├── Home/
+│   │   ├── Lesson/
+│   │   ├── Dictation/
+│   │   ├── Dictionary/
+│   │   ├── Profile/
+│   │   └── Leaderboard/
+│   ├── components/           # Reusable components
+│   │   ├── atoms/
+│   │   ├── molecules/
+│   │   └── organisms/
+│   ├── services/             # API, storage, utils
+│   │   ├── api/
+│   │   ├── storage/
+│   │   └── audio/
+│   ├── context/              # React Context
+│   │   ├── AuthContext.tsx
+│   │   ├── ThemeContext.tsx
+│   │   ├── LanguageContext.tsx
+│   │   └── OfflineContext.tsx
+│   ├── hooks/                # Custom hooks
+│   ├── types/                # TypeScript definitions
+│   ├── styles/               # Global styles
+│   └── assets/               # Images, fonts, i18n
+├── ios/                      # iOS native code
+├── __tests__/                # Tests
+└── package.json
+```
 
-Now that you have successfully run the app, let's make changes!
+---
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+## Available Scripts
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
+```bash
+# Development
+npm start                  # Start Metro bundler
+npm run ios               # Run on iOS simulator
+npm run android           # Run on Android (future)
 
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
+# Testing
+npm test                  # Run Jest tests
+npm run test:watch        # Watch mode
+npm run test:coverage     # Coverage report
 
-## Congratulations! :tada:
+# Code Quality
+npm run lint              # Run ESLint
+npm run lint:fix          # Fix linting issues
+npm run typecheck         # TypeScript check
 
-You've successfully run and modified your React Native App. :partying_face:
+# Build
+npm run build:ios         # Build iOS app
+```
 
-### Now what?
+---
 
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
+## Key Technologies
 
-# Troubleshooting
+- **React Native 0.73+**: Mobile framework
+- **TypeScript**: Type safety
+- **React Navigation 6+**: Navigation
+- **AsyncStorage**: Local storage
+- **NetInfo**: Network connectivity
+- **React Native Track Player**: Audio playback
+- **React Native Video**: Video playback
+- **React Native Voice**: Speech recognition
+- **React Native FS**: File system access
+- **Axios**: HTTP client
+- **React i18next**: Internationalization
 
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
+---
 
-# Learn More
+## Configuration
 
-To learn more about React Native, take a look at the following resources:
+### API Configuration
 
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+Edit `src/services/api/client.ts` to configure API base URL and authentication.
+
+### Offline Support
+
+The app supports offline mode with:
+- Dictionary caching (90-day TTL)
+- Lesson downloads (max 10)
+- Progress sync queue
+- Auto-sync on reconnect
+
+### Deep Linking
+
+The app supports deep links:
+
+```
+papageil://lessons/:lessonId
+papageil://profile
+papageil://leaderboard
+papageil://achievements
+```
+
+Configure in `ios/PapaGeil/Info.plist` and `src/navigation/linking.ts`.
+
+---
+
+## Testing
+
+### Unit Tests
+
+```bash
+npm test
+```
+
+### E2E Tests (Detox)
+
+```bash
+# Build for testing
+npm run build:e2e
+
+# Run tests
+npm run test:e2e
+```
+
+---
+
+## Troubleshooting
+
+### iOS Build Issues
+
+**Pod install fails:**
+```bash
+cd ios
+pod deintegrate
+pod install
+```
+
+**Xcode build errors:**
+- Clean build folder: Product → Clean Build Folder
+- Delete DerivedData: ~/Library/Developer/Xcode/DerivedData/
+
+**Metro bundler issues:**
+```bash
+npm start -- --reset-cache
+```
+
+### Common Issues
+
+**Network errors:**
+- Check `.env` file has correct `API_BASE_URL`
+- Ensure backend is running
+- For iOS simulator, use `http://localhost:3000`
+
+**Audio/Video not playing:**
+- Check iOS permissions in Info.plist
+- Verify file URLs are accessible
+
+**Downloads failing:**
+- Check storage permissions
+- Verify minimum 100MB free space
+- Check network connectivity
+
+---
+
+## Development Guidelines
+
+### Code Style
+
+- Use TypeScript for all new files
+- Follow ESLint configuration
+- Use functional components with hooks
+- Keep components small and focused
+
+### File Naming
+
+- Components: PascalCase (e.g., `LessonCard.tsx`)
+- Utilities: camelCase (e.g., `formatTime.ts`)
+- Constants: UPPER_SNAKE_CASE
+
+### Component Structure
+
+```typescript
+// 1. Imports
+import React from 'react';
+import { View, Text } from 'react-native';
+
+// 2. Types/Interfaces
+interface MyComponentProps {
+  title: string;
+}
+
+// 3. Component
+export default function MyComponent({ title }: MyComponentProps) {
+  // Logic
+  return (
+    <View>
+      <Text>{title}</Text>
+    </View>
+  );
+}
+
+// 4. Styles
+const styles = StyleSheet.create({
+  // ...
+});
+```
+
+---
+
+## Performance Tips
+
+- Use `React.memo()` for expensive components
+- Implement `FlatList` for long lists
+- Use `Image` with proper `resizeMode`
+- Enable Hermes engine (default in RN 0.70+)
+- Lazy load screens with `React.lazy()` (future enhancement)
+
+---
+
+## Deployment
+
+See `DEPLOYMENT.md` for App Store deployment instructions.
+
+---
+
+## Contributing
+
+1. Create feature branch from `main`
+2. Make changes with descriptive commits
+3. Run tests and linting
+4. Create pull request
+5. Wait for review and merge
+
+---
+
+## License
+
+Proprietary - All rights reserved
+
+---
+
+## Support
+
+For issues or questions:
+- GitHub Issues: [repository]/issues
+- Email: support@papageil.com
+
+---
+
+## Changelog
+
+See `CHANGELOG.md` for version history.
+
+---
+
+**Version**: 1.0.0  
+**Last Updated**: December 2024

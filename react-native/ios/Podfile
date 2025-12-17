@@ -46,8 +46,14 @@ target 'PapaGeil' do
       end
     end
     
-    # Patch Folly's Expected.h to force-disable coroutines
-    `cd "#{Pod::Config.instance.installation_root}" && sed -i '' 's/#if FOLLY_HAS_COROUTINES/#if 0 \\/\\/ FOLLY_HAS_COROUTINES/g' Pods/RCT-Folly/folly/Expected.h 2>/dev/null || true`
+    # Patch Folly headers to force-disable coroutines (Expected.h and Optional.h)
+    `cd "#{Pod::Config.instance.installation_root}" && sed -i '' 's/#if FOLLY_HAS_COROUTINES/#if 0 \\/\\/ FOLLY_HAS_COROUTINES/g' Pods/RCT-Folly/folly/Expected.h Pods/RCT-Folly/folly/Optional.h 2>/dev/null || true`
+    
+    # Patch Folly Time.h to fix clockid_t redefinition with iOS SDK 26.2+
+    # Skip the typedef on Apple platforms and only define it on Windows
+    `cd "#{Pod::Config.instance.installation_root}" && chmod +w Pods/RCT-Folly/folly/portability/Time.h && sed -i '' '/#ifndef clockid_t/,/typedef uint8_t clockid_t;/c\\
+#if defined(_WIN32)\\
+typedef uint8_t clockid_t;' Pods/RCT-Folly/folly/portability/Time.h 2>/dev/null || true`
     
     # Fix Hermes script phase warning by adding output files
     installer.target_installation_results.pod_target_installation_results.each do |pod_name, target_installation_result|

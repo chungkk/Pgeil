@@ -234,3 +234,21 @@ export const calculateAccuracy = (userAnswer: string, correctAnswer: string): nu
   
   return Math.round(accuracy);
 };
+
+/**
+ * Get download preparation data (for offline downloads)
+ */
+export const prepareDownload = async (lessonId: string): Promise<{
+  videoUrl: string;
+  audioUrl: string;
+  transcript: any;
+  fileSize: number;
+}> => {
+  try {
+    const response = await apiClient.get(`/api/lessons/${lessonId}/download`);
+    return response.data;
+  } catch (error: any) {
+    console.error('Prepare download error:', error);
+    throw new Error(error.response?.data?.message || 'Failed to prepare download');
+  }
+};
