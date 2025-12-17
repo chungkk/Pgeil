@@ -8,9 +8,12 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { RootStackParamList } from '@/types/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { AuthStack } from './AuthStack';
-import { MainTabs } from './MainTabs';
-import { LessonStack } from './LessonStack';
+import { lazyLoad } from '@/utils/lazyLoad';
+
+// Lazy load stacks for code splitting
+const AuthStack = lazyLoad(() => import('./AuthStack').then(m => ({ default: m.AuthStack })));
+const MainTabs = lazyLoad(() => import('./MainTabs').then(m => ({ default: m.MainTabs })));
+const LessonStack = lazyLoad(() => import('./LessonStack').then(m => ({ default: m.LessonStack })));
 
 const Stack = createStackNavigator<RootStackParamList>();
 
